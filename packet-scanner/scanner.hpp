@@ -53,26 +53,26 @@ void Scanner::callback_handler(unsigned char *args, pcap_pkthdr *header, unsigne
 	output.consumed = false;
 
 	iphdr *ipv4 = (iphdr *)(packet + frameHeaderLen);
-
-	if (ipv4->version == /*IPv*/4){
+	if (ipv4->version == 4){
 		output.ttl = ipv4->ttl;
 		output.ip = ipv4->saddr;
 
 		if (ipv4->protocol == IPPROTO_TCP){
-			tcphdr *tcp = (tcphdr *)(ipv4 + (ipv4->ihl * 4));
+			tcphdr *tcp = (tcphdr *)((packet + frameHeaderLen) + (ipv4->ihl * 4));
 			output.port = tcp->source;
 
 			output.type = IPV4_TCP;
 		}
 		else if (ipv4->protocol == IPPROTO_UDP){
-			udphdr *udp = (udphdr *)(ipv4 + (ipv4->ihl * 4));
+			udphdr *udp = (udphdr *)((packet + frameHeaderLen) + (ipv4->ihl * 4));
 			output.port = udp->source;
 
 			output.type = IPV4_UDP;
 		}
 		put(output);
 	}
-	else if (ipv4->version == /*IPv*/6){
+	/*
+	else if (ipv4->version == 6){
 		ip6_hdr *ipv6 = (ip6_hdr *)ipv4;
 		output.ttl = ipv6->ip6_ctlun.ip6_un1.ip6_un1_hlim;
 		output.ip = 0xffffffff;
@@ -91,6 +91,7 @@ void Scanner::callback_handler(unsigned char *args, pcap_pkthdr *header, unsigne
 		}
 		put(output);
 	}
+	*/
 }
 void Scanner::getFrameLength(unsigned int dataLinkType){
 	switch(dataLinkType){
@@ -113,20 +114,4 @@ void Scanner::getFrameLength(unsigned int dataLinkType){
 		default: 								  break;
 	}
 }
-
-namespace DummyScanner {
-	using namespace Buffer;
-	void *start(void *){
-		for (;;){
-			buffer_t output;
-			int r = (rand()%5+1)*100000;
-			output.consumed = false;
-			output.ttl = 64;
-			put(output);
-			usleep(r);
-		}
-		return NULL;
-	}
-}
-
 #endif

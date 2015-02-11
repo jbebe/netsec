@@ -30,28 +30,9 @@ namespace Parser {
 
 void *Parser::start(void *){
 	using namespace Buffer;
-	//int max = 0;
-	while (OS::run){
+	for (;;){
 		buffer_t tmp = Buffer::get();
-#ifdef DEBUG
-		for (int i = 0; i < BUFFER_SIZE; i++){
-			if (i == getPos){
-				printf("x");
-			}
-			else if (i == putPos){
-				printf("O");
-			}
-			else {
-				if (Buffer::data[i].consumed){
-					printf("_");
-				}
-				else {
-					printf("#");
-				}
-			}
-		}
-		printf(" %d\n", tmp.ttl);
-#else
+
 		switch (tmp.type) {
 			case IPV4_TCP:
 				printf("ipv4/TCP ");
@@ -66,17 +47,10 @@ void *Parser::start(void *){
 				printf("ipv6/UDP ");
 				break;
 		}
+		tmp.ip = ntohl(tmp.ip);
 		printf("%3d.%3d.%3d.%3d port:%5d ttl:%d\n",
 			(tmp.ip&0xff000000)>>24, (tmp.ip&0xff0000)>>16, (tmp.ip&0xff00)>>8, (tmp.ip&0xff),
-			tmp.port, tmp.ttl);
-		/*
-		if (consumableCnt > max){
-			max = consumableCnt;
-			printf("%d | TTL: %d\n", max, tmp.ttl);
-		}
-		*/
-
-#endif /* DEBUG */
+			ntohs(tmp.port), tmp.ttl);
 	}
 	puts("parser loop: end");
 	return 0;

@@ -11,17 +11,12 @@
  */
 
 namespace OS {
-	bool run = true;
 	void init();
 	void int_sig(int);
 	void term_sig(int);
 	void segv_sig(int);
 	void shutdown(){
-		using namespace Scanner;
-		run = false;
-		#ifndef DEBUG
-			Scanner::stop();
-		#endif
+		Scanner::stop();
 		sleep(1);
 		exit(0);
 	}

@@ -13,15 +13,6 @@
  */
 
 int main() {
-#ifdef DEBUG
-	Buffer::init();
-	OS::init();
-	pthread_create(&scannerThread, NULL, DummyScanner::start, NULL);
-	pthread_create(&parserThread, NULL, Parser::start, NULL);
-
-	pthread_join(scannerThread, NULL);
-	pthread_join(parserThread, NULL);
-#else
 	//Scanner::init("eth0");
 	Scanner::init("wlan0");
 	Buffer::init();
@@ -33,6 +24,6 @@ int main() {
 
 	pthread_join(scannerThread, NULL);
 	pthread_join(parserThread, NULL);
-#endif
+
 	return 0;
 }
