@@ -12,22 +12,37 @@
  * - Cannot think of any improvements for now.
  */
 
-#define BUFFER_SIZE 16
+#define BUFFER_SIZE 4
 
 namespace Buffer {
 	enum buffenum_t {
-		IPV4_UDP,
-		IPV4_TCP,
-		IPV6_UDP,
-		IPV6_TCP
+		IPV4_UDP = 0,
+		IPV4_TCP = 1,
+		IPV6_UDP = 2,
+		IPV6_TCP = 3
 	};
-	struct buffer_t {
-		unsigned int ip; /* source ip */
-		unsigned short port; /* source port */
-		int ttl;
-		bool consumed;
-
-		buffenum_t type; /* debug */
+	struct buffer_t { /* 20byte */
+		union {
+			union {
+				struct {
+					unsigned char a, b, c, d;
+				} parts;
+				unsigned int full;
+			} ipv4;
+			union {
+				struct {
+					unsigned short a, b, c, d, e, f, g, h;
+				} parts;
+				unsigned int full[4];
+			} ipv6;
+		} ip;
+		struct {
+			unsigned short 	port; /* source port */
+			unsigned short
+							ttl : 8,
+							type : 7,
+							consumed : 1;
+		} infos;
 	};
 
 	pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -49,7 +64,7 @@ namespace Buffer {
 
 void Buffer::init(){
 	for (int i = 0; i < BUFFER_SIZE; i++){
-		data[i].consumed = true;
+		data[i].infos.consumed = 1;
 	}
 	pthread_mutex_init(&mutex, NULL);
 	pthread_cond_init(&condition, NULL);
@@ -74,11 +89,11 @@ Buffer::buffer_t Buffer::get(){
 		if (consumableCnt <= 0){
 			wait();
 		}
-		while (data[getPos].consumed == true){
+		while (data[getPos].infos.consumed == 1){
 			getPos = (getPos + 1)%BUFFER_SIZE;
 		}
 		output = data[getPos];
-		data[getPos].consumed = true;
+		data[getPos].infos.consumed = 1;
 		consumableCnt--;
 		notify();
 	}

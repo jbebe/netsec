@@ -8,6 +8,7 @@
 #include <netinet/udp.h>
 #include "buffer.hpp"
 #include <stdlib.h>
+#include <string.h>
 
 /*
  * INFOS
@@ -50,48 +51,43 @@ void Scanner::stop(){
 void Scanner::callback_handler(unsigned char *args, pcap_pkthdr *header, unsigned char *packet){
 	using namespace Buffer;
 	buffer_t output;
-	output.consumed = false;
+	output.infos.consumed = 0;
 
 	iphdr *ipv4 = (iphdr *)(packet + frameHeaderLen);
 	if (ipv4->version == 4){
-		output.ttl = ipv4->ttl;
-		output.ip = ipv4->saddr;
+		output.infos.ttl = ipv4->ttl;
+		output.ip.ipv4.full = ipv4->saddr;
 
 		if (ipv4->protocol == IPPROTO_TCP){
-			tcphdr *tcp = (tcphdr *)((packet + frameHeaderLen) + (ipv4->ihl * 4));
-			output.port = tcp->source;
-
-			output.type = IPV4_TCP;
+			tcphdr *tcp = (tcphdr *)((unsigned char *)ipv4 + (ipv4->ihl * 4));
+			output.infos.port = tcp->source;
+			output.infos.type = IPV4_TCP;
+			put(output);
 		}
 		else if (ipv4->protocol == IPPROTO_UDP){
-			udphdr *udp = (udphdr *)((packet + frameHeaderLen) + (ipv4->ihl * 4));
-			output.port = udp->source;
-
-			output.type = IPV4_UDP;
+			udphdr *udp = (udphdr *)((unsigned char *)ipv4 + (ipv4->ihl * 4));
+			output.infos.port = udp->source;
+			output.infos.type = IPV4_UDP;
+			put(output);
 		}
-		put(output);
 	}
-	/*
 	else if (ipv4->version == 6){
 		ip6_hdr *ipv6 = (ip6_hdr *)ipv4;
-		output.ttl = ipv6->ip6_ctlun.ip6_un1.ip6_un1_hlim;
-		output.ip = 0xffffffff;
-
+		output.infos.ttl = ipv6->ip6_ctlun.ip6_un1.ip6_un1_hlim;
+		memcpy(output.ip.ipv6.full, ipv6->ip6_src.__in6_u.__u6_addr8, sizeof(struct in6_addr));
 		if (ipv6->ip6_ctlun.ip6_un1.ip6_un1_nxt == IPPROTO_TCP){
-			tcphdr *tcp = (tcphdr *)(ipv4 + (ipv4->ihl * 4));
-			output.port = tcp->source;
-
-			output.type = IPV6_TCP;
+			tcphdr *tcp = (tcphdr *)((unsigned char *)ipv6 + sizeof(ip6_hdr));
+			output.infos.port = tcp->source;
+			output.infos.type = IPV6_TCP;
+			put(output);
 		}
 		else if (ipv6->ip6_ctlun.ip6_un1.ip6_un1_nxt == IPPROTO_UDP){
-			udphdr *udp = (udphdr *)(ipv4 + (ipv4->ihl * 4));
-			output.port = udp->source;
-
-			output.type = IPV6_UDP;
+			udphdr *udp = (udphdr *)((unsigned char *)ipv6 + sizeof(ip6_hdr));
+			output.infos.port = udp->source;
+			output.infos.type = IPV6_UDP;
+			put(output);
 		}
-		put(output);
 	}
-	*/
 }
 void Scanner::getFrameLength(unsigned int dataLinkType){
 	switch(dataLinkType){
