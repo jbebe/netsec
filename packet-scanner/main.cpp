@@ -1,6 +1,6 @@
 //#define DEBUG
 
-#include "pthread.h"
+#include <pthread.h>
 #include "scanner.hpp"
 #include "buffer.hpp"
 #include "parser.hpp"

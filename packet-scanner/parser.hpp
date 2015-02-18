@@ -1,6 +1,7 @@
 #ifndef PARSER_HPP_
 #define PARSER_HPP_
 
+#include <stdio.h>
 #include <google/sparse_hash_map>
 #include <queue>
 #include "postgre.hpp"
@@ -22,19 +23,26 @@
 #define DB_SIZE 2000
 
 namespace Parser {
-
 	enum TTL_OS 	{ WIN95 = 32, WINNT = 128, BSD = 255, UNIX = 64 };
-	/*enum WINDOW_OS 	{};*/
-
 	struct user_t {
 		enum TTL_OS ttl;
 	};
-
 	using google::sparse_hash_map;
 	using std::queue;
 	sparse_hash_map<int, queue<user_t> > userDB;
-
 	void *start(void *);
+	unsigned int ipv6toSCH(unsigned short c, unsigned short d){
+#if __BYTE_ORDER == __BIG_ENDIAN
+	unsigned int out = 0x98420000;
+	out |= (((c&0x0f00) >> 8)*100 + ((c&0x00f0) >> 4)*10 + (c&0x000f)) << 8;
+	out |= ((d&0x0f00) >> 8)*100 + ((d&0x00f0) >> 4)*10 + (d&0x000f);
+#else
+	unsigned int out = 0x00004298;
+	out |= (((c&0x0f00) >> 8)*100 + ((c&0x00f0) >> 4)*10 + (c&0x000f)) << 16;
+	out |= (((d&0x0f00) >> 8)*100 + ((d&0x00f0) >> 4)*10 + (d&0x000f)) << 24;
+#endif
+	return out;
+	}
 }
 
 void *Parser::start(void *){
@@ -51,9 +59,19 @@ void *Parser::start(void *){
 				break;
 			case IPV6_TCP:
 			case IPV6_UDP:
-				printf("%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x port:%5d ttl:%3d load:%5.1f%%\n",
+				union {
+					struct {
+						unsigned char a, b, c, d;
+					};
+					unsigned int ip;
+				} out;
+				out.ip = ipv6toSCH(tmp.ip.ipv6.parts.f, tmp.ip.ipv6.parts.g);
+				printf("%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x"
+						" -> %3d.%3d.%3d.%3d "
+						"port:%5d ttl:%3d load:%5.1f%%\n",
 					tmp.ip.ipv6.parts.a, tmp.ip.ipv6.parts.b, tmp.ip.ipv6.parts.c, tmp.ip.ipv6.parts.d,
 					tmp.ip.ipv6.parts.e, tmp.ip.ipv6.parts.f, tmp.ip.ipv6.parts.g, tmp.ip.ipv6.parts.h,
+					out.a, out.b, out.c, out.d,
 					ntohs(tmp.infos.port), tmp.infos.ttl, ((float)consumableCnt/BUFFER_SIZE)*100.0f);
 				break;
 		}
