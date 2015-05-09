@@ -17,6 +17,9 @@
  * (e.g. xxx.xxx.xx[x.xxx] <--- storing only these bits of the ip)
  * and since we know that only 2000 users are present it can be fixed and we don't need linked list
  * 254 + 1022 + 2046 = 3322 db user max
+ * 
+ * HASH FUNCTION: std::map-hez saját hash function -> sch netre optimalizálva (pl. subneten belüli ip-kre maszkolva)
+ * https://www.daniweb.com/software-development/cpp/threads/393577/create-hash-function-for-stl-hash-map
  */
 
 #define HISTORY_SIZE 64
