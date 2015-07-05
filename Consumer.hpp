@@ -2,6 +2,11 @@
 
 #include <atomic>
 #include <mutex>
+#include <chrono>
+#include <thread>
+
+
+#include "debug.hpp"
 
 class BufferEntry {
 
@@ -20,42 +25,71 @@ public:
 protected:
 	BufferEntry buffer[BUFF_SIZE];
 	BufferEntry *buffer_end;
-	std::atomic<unsigned short> consumed;
+	std::atomic<unsigned short> consumable;
 	std::mutex mutex; 
-	std::unique_lock<std::mutex> lock;
 	
 public:
 	Consumer()
-	: consumed{BUFF_SIZE}, buffer_end{&buffer[BUFF_SIZE]}, mutex{}, lock{mutex}
+	: buffer_end{&buffer[BUFF_SIZE]}, consumable{0}, mutex{}
 	{}
 	
 	Consumer(Consumer &&moved_consumer)
 	: Consumer() 
 	{}
 	
-	void put(int data){
+	void insertConsumable(int data){
 		BufferEntry *ptr = buffer;
 		while (ptr != buffer_end){
 			if (ptr->consumed == true){
 				ptr->data = data;
+				ptr->consumed = false;
+				++consumable;
 				return;
 			}
 		}
 	}
 	
-	bool full(){
-		return consumed == 0;
+	int getConsumable(){
+		BufferEntry *ptr = buffer;
+		while (ptr != buffer_end){
+			if (ptr->consumed == false){
+				ptr->consumed = true;
+				--consumable;
+				return ptr->data;
+			}
+		}
+		return -1;
 	}
 	
-	void lockBuffer(){
-		lock.lock();
+	inline bool full() const {
+		return consumable == BUFF_SIZE;
 	}
 	
-	void unlockBuffer(){
-		lock.unlock();
+	inline bool empty() const {
+		return consumable == 0;
+	}
+	
+	inline void lockBuffer(){
+		mutex.lock();
+	}
+	
+	inline void unlockBuffer(){
+		mutex.unlock();
 	}
 	
 	void run(){
+		
+		while (RUN){
+			if (empty() == false){
+				lockBuffer();
+				int data = getConsumable();
+				unlockBuffer();
+				dbg_printf("consumed: %d\n", data);
+				
+				// human readable
+				std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+			}
+		}
 		
 	}
 	

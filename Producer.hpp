@@ -24,23 +24,24 @@ public:
 	{}
 	
 	int get(){
-		return rand();
+		int r = rand();
+		dbg_printf("produced: %d\n", r);
+		return r;
 	}
 	
 	void run(){
-		int rotator = 0;
 		while (RUN){
 			
 			for (auto &consumer : *consumers_ptr){
 				if (consumer.full() == false){
 					consumer.lockBuffer();
-					consumer.put(get());
+					consumer.insertConsumable(get());
 					consumer.unlockBuffer();
 				}
 			}
 			
 			// human readable
-			std::this_thread::sleep_for(std::chrono::milliseconds(500));
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 		}
 	}
 	

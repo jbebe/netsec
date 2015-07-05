@@ -18,7 +18,7 @@ private:
 	
 public:
 	Netsec(const char *interface){
-		int cores = std::thread::hardware_concurrency();
+		int cores = std::max<int>(std::thread::hardware_concurrency(), 1);
 		
 		// number of consumers equals cores minus one producer/main thread
 		consumers.reserve(cores - 1);
