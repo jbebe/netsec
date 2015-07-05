@@ -39,7 +39,6 @@ private:
 	const std::vector<std::unique_ptr<IConsumer>> consumers;
 
 public:
-
 	Buffer()
 	: stop_flag{false}
 	{
@@ -79,7 +78,23 @@ public:
 		}
 		// delete packets
 	}
+	// Buffer iterator
+	
+	class iterator: public std::iterator<std::forward_iterator_tag, BufferEntry> {
+	private:
+		Buffer& buffer_;
+		BufferEntry* elem_;
+	public:
+		iterator(Buffer& buffer, BufferEntry* elem);
+		iterator(const iterator& it);
+		iterator& operator++();
+		iterator operator++(int);
+		bool operator==(const iterator& rhs);
+		bool operator!=(const iterator& rhs);
+		BufferEntry& operator*();
+		BufferEntry* operator->();
 
+	};
 }; // Buffer
 
 } // NETSEC NS
