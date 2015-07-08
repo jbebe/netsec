@@ -5,6 +5,7 @@
 #include <initializer_list>
 #include <thread>
 
+#include "Globals.hpp"
 #include "Producer.hpp"
 #include "Consumer.hpp"
 #include "Signals.hpp"
@@ -25,7 +26,7 @@ public:
 		
 		int cores = std::max<int>(std::thread::hardware_concurrency(), 1);
 		
-		// number of consumers equals cores minus one producer/main thread
+		// num. of consumers equals cores minus producer thread
 		consumers.reserve(cores - 1);
 		for (int i = 0; i < cores - 1; i++){
 			consumers.emplace_back();
@@ -39,7 +40,7 @@ public:
 	
 	void start(){
 		
-		// start producer
+		// start producer(s)
 		threads.emplace_back(&Producer::run, &producer);
 		
 		// start consumers
@@ -47,12 +48,13 @@ public:
 			threads.emplace_back(&Consumer::run, &consumer);
 		}
 		
-		// wait or end
+		// wait for end
 		for (auto &thread : threads){
 			thread.join();
 		}
 		
-		dbg_printf("Exiting...");
+		// performance score
+		dbg_printf("score: %d", (int)performance_counter);
 	}
 
 };

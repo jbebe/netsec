@@ -16,7 +16,7 @@ private:
 	// foreign data
 	std::vector<Consumer> *consumers;
 	
-	// personal data
+	// private data
 	std::mutex cond_mut;
 	std::unique_lock<std::mutex> cond_lock;
 	std::condition_variable cond;
@@ -36,23 +36,11 @@ public:
 	
 	Producer(Producer &) = delete;
 	
+	// here comes the functors
 	int get(){
-		int r = rand();
-		return r;
+		return rand();
 	}
-	
-	void drawBuffer(Consumer *consumer){
-		std::stringstream sb;
-		sb << "core " << consumer->id << " [";
-		for (BufferEntry *ptr = consumer->buffer; ptr != consumer->buffer_end; ptr++){
-			if (ptr->consumed)
-				sb << ".";
-			else 
-				sb << "x";
-		}
-		dbg_printf("%s]\n", sb.str().c_str());
-	}
-	
+
 	void run(){
 		while (RUN){
 			
@@ -65,7 +53,6 @@ public:
 				if ((is_full = consumer.full()) == false){
 					consumer.lockBuffer();
 					consumer.putConsumable(get());
-					drawBuffer(&consumer);
 					consumer.unlockBuffer();
 					if (consumer.consumable == 1)
 						consumer.notify();
@@ -79,11 +66,11 @@ public:
 				cond.wait(cond_lock);
 				dbg_printf("producer notified\n");
 			}
-			else {
+			/*else{
 				// human readable
 				// producer works fast
-				std::this_thread::sleep_for(std::chrono::milliseconds(100));
-			}
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			}*/
 		}
 		
 		// warn everyone that it's over

@@ -19,7 +19,7 @@ void init_signals(){
 	
 	sigaction(SIGTERM, &sa, NULL);
 	sigaction(SIGINT, &sa, NULL);
+	sigaction(SIGKILL, &sa, NULL);
 	
 	//sigaction(SIGSEGV, &sa, NULL);
-	//sigaction(SIGKILL, &sa, NULL);
 }

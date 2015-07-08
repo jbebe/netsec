@@ -8,6 +8,7 @@
 #include <type_traits>
 
 #include "debug.hpp"
+#include "Globals.hpp"
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
@@ -67,7 +68,6 @@ public:
 				ptr->consumed = false;
 				ptr->data = data;
 				++consumable;
-				//dbg_printf("put [index %d, core %d]\n", (int)(ptr - buffer), id);
 				return;
 			}
 		}
@@ -78,11 +78,22 @@ public:
 			if (ptr->consumed == false){
 				ptr->consumed = true;
 				--consumable;
-				//dbg_printf("get [index %d, core %d]\n", (int)(ptr - buffer), id);
 				return ptr->data;
 			}
 		}
 		return -1;
+	}
+	
+	void dbg_drawBuffer(){
+		std::stringstream sb;
+		sb << "core " << id << " [";
+		for (BufferEntry *ptr = buffer; ptr != buffer_end; ptr++){
+			if (ptr->consumed)
+				sb << ".";
+			else 
+				sb << "x";
+		}
+		dbg_printf("%s] %d\n", sb.str().c_str(), (int)consumable);
 	}
 	
 	bool full() const {
@@ -110,30 +121,31 @@ public:
 		while (RUN){
 			
 			if (empty() == false){
-				lockBuffer();
 				
+				lockBuffer();
+				dbg_drawBuffer();
 				int data = getConsumable();
 				dbg_printf("%n", &data);
-				
+				dbg_drawBuffer();
 				unlockBuffer();
-				
-				
-				if (consumable == BUFF_SIZE-1)
+
+				if (consumable == BUFF_SIZE - 1)
 					producer_cond->notify_one();
-				
+
+				++performance_counter;
+
 				// human readable
-				// consumer works slow
-				std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+				//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 			}
 			else {
-				dbg_printf("core %d in wait\n", id);
+				dbg_printf("core %d wait\n", id);
 				// wait for data because it's empty
 				cond.wait(cond_lock/*, [this]{ return !this->empty(); }*/);
 				dbg_printf("core %d notified\n", id);
 			}
 		}
 		
-		// warn everyone that it's over
+		// warn everyone
 		producer_cond->notify_one();
 		
 	}
