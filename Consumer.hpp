@@ -60,6 +60,7 @@ public:
 		producer_cond = pc;
 	}
 	
+	// TODO: store last 
 	void putConsumable(int data){
 		for (BufferEntry *ptr = buffer; ptr != buffer_end; ++ptr){
 			if (ptr->consumed == true){
@@ -131,6 +132,9 @@ public:
 				dbg_printf("core %d notified\n", id);
 			}
 		}
+		
+		// warn everyone that it's over
+		producer_cond->notify_one();
 		
 	}
 	

@@ -7,6 +7,7 @@
 
 #include "Producer.hpp"
 #include "Consumer.hpp"
+#include "Signals.hpp"
 #include "debug.hpp"
 
 class Netsec { 
@@ -18,6 +19,10 @@ private:
 	
 public:
 	Netsec(const char *interface){
+		
+		// init signals
+		init_signals();
+		
 		int cores = std::max<int>(std::thread::hardware_concurrency(), 1);
 		
 		// number of consumers equals cores minus one producer/main thread
@@ -46,6 +51,8 @@ public:
 		for (auto &thread : threads){
 			thread.join();
 		}
-	}
 		
+		dbg_printf("Exiting...");
+	}
+
 };
