@@ -54,7 +54,7 @@ public:
 		}
 		
 		// performance score
-		dbg_printf("score: %d", (int)performance_counter);
+		dbg_printf("score: %d\nExiting...\n", (int)performance_counter);
 	}
 
 };

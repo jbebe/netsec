@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
@@ -10,106 +11,98 @@
 #include "debug.hpp"
 #include "Globals.hpp"
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-
-class BufferEntry {
-
-public:
-	int data;
-	bool consumed;
-	BufferEntry(): data{0}, consumed{true} {}
-	
-};
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-
 class Consumer {
+
+public:
+	static std::atomic<bool> RUN;
 	static int counter;
+	static constexpr int BUFF_SIZE = 3;
+	static constexpr int BUFF_MAXINDEX = (BUFF_SIZE - 1);
+	static constexpr int BUFF_MININDEX = -1;
 	
-public:
-	static constexpr int BUFF_SIZE = 8;
-	
-public:
+private:
 	// personal data
-	BufferEntry buffer[BUFF_SIZE];
-	BufferEntry *buffer_end;
-	std::atomic<unsigned short> consumable;
+	int buffer[BUFF_SIZE];
 	std::mutex buffer_mut;
 	
 	std::mutex cond_mut;
-	std::unique_lock<std::mutex> cond_lock;
 	std::condition_variable cond;
 	
+	int filled_pos;
+	
 	// foreign data
-	std::condition_variable *producer_cond;
+	std::condition_variable *producer_cv;
 	
 	// debug
 	int id;
 	
 public:
 	Consumer()
-	: buffer_end{&buffer[BUFF_SIZE]}, consumable{0}, cond_lock{cond_mut}, producer_cond{nullptr}, id{counter++}
+	: filled_pos{-1}, id{counter++}
 	{}
 	
-	Consumer(Consumer &&moved_consumer)
-	: Consumer() 
-	{}
+	Consumer(Consumer &&moved_consumer): Consumer() {}
 	
-	Consumer(Consumer &) = delete;
+	Consumer(const Consumer &) = delete;
 	
-	void setProducerCondition(std::condition_variable *pc){
-		producer_cond = pc;
+	void setProducerCV(std::condition_variable *pcv){
+		producer_cv = pcv;
 	}
 	
-	// TODO: store last 
-	void putConsumable(int data){
-		for (BufferEntry *ptr = buffer; ptr != buffer_end; ++ptr){
-			if (ptr->consumed == true){
-				ptr->consumed = false;
-				ptr->data = data;
-				++consumable;
-				return;
-			}
-		}
-	}
-	
-	int getConsumable(){
-		for (BufferEntry *ptr = buffer; ptr != buffer_end; ++ptr){
-			if (ptr->consumed == false){
-				ptr->consumed = true;
-				--consumable;
-				return ptr->data;
-			}
-		}
-		return -1;
-	}
-	
-	void dbg_drawBuffer(){
+	void dbg_drawBuffer(const char *str = ""){
 		std::stringstream sb;
-		sb << "core " << id << " [";
-		for (BufferEntry *ptr = buffer; ptr != buffer_end; ptr++){
-			if (ptr->consumed)
-				sb << ".";
-			else 
+		sb << "[core " << id << "] " << str << " [";
+		for (int i = 0; i <= BUFF_MAXINDEX; i++){
+			if (i <= filled_pos)
 				sb << "x";
+			else 
+				sb << ".";
 		}
-		dbg_printf("%s] %d\n", sb.str().c_str(), (int)consumable);
+		dbg_printf("%s] fill_pos: %d\n", sb.str().c_str(), filled_pos);
 	}
 	
-	bool full() const {
-		return (unsigned short)consumable == BUFF_SIZE;
+	inline bool full() const {
+		return filled_pos == BUFF_MAXINDEX;
 	}
 	
-	bool empty() const {
-		return (unsigned short)consumable == 0;
+	inline bool empty() const {
+		return filled_pos == BUFF_MININDEX;
 	}
 	
-	inline void lockBuffer(){
-		buffer_mut.lock();
+	void put(int data){
+		bool must_notify = false;
+		{
+			std::lock_guard<std::mutex> lg{buffer_mut};
+			//dbg_drawBuffer("put() before");
+			buffer[++filled_pos] = data;
+			dbg_drawBuffer("put() after");
+			must_notify = (filled_pos == 0);
+		}
+		if (must_notify){
+			cond.notify_one();
+		}
 	}
 	
-	inline void unlockBuffer(){
-		buffer_mut.unlock();
+	int get(){
+		{
+			std::unique_lock<std::mutex> ul{cond_mut};
+			if (empty()){
+				dbg_printf("[core %d] get() wait\n", id);
+				cond.wait(ul/*, [this]{ return !this->empty(); }*/);
+				dbg_printf("[core %d] get() resumed\n", id);
+			}
+		}
+		int data = -1;
+		bool must_notify = false;
+		{
+			std::lock_guard<std::mutex> lg{buffer_mut};
+			data = buffer[filled_pos--];
+			must_notify = (filled_pos == (BUFF_MAXINDEX - 1));
+		}
+		if (must_notify){
+			producer_cv->notify_one();
+		}
+		return data;
 	}
 	
 	void notify(){
@@ -119,37 +112,18 @@ public:
 	void run(){
 		
 		while (RUN){
-			
-			if (empty() == false){
-				
-				lockBuffer();
-				dbg_drawBuffer();
-				int data = getConsumable();
-				dbg_printf("%n", &data);
-				dbg_drawBuffer();
-				unlockBuffer();
-
-				if (consumable == BUFF_SIZE - 1)
-					producer_cond->notify_one();
-
-				++performance_counter;
-
-				// human readable
-				//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-			}
-			else {
-				dbg_printf("core %d wait\n", id);
-				// wait for data because it's empty
-				cond.wait(cond_lock/*, [this]{ return !this->empty(); }*/);
-				dbg_printf("core %d notified\n", id);
-			}
+			int data = get();
+			dbg_printf("%n", &data);
+			++performance_counter;
 		}
 		
-		// warn everyone
-		producer_cond->notify_one();
-		
+		// warn neighboor
+		producer_cv->notify_one();
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 	
 };
 
 int Consumer::counter = 0;
+
+std::atomic<bool> Consumer::RUN{true};

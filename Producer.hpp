@@ -12,29 +12,29 @@
 
 class Producer {
 	
+public:
+	static std::atomic<bool> RUN;
+	
 private:
 	// foreign data
 	std::vector<Consumer> *consumers;
 	
 	// private data
-	std::mutex cond_mut;
-	std::unique_lock<std::mutex> cond_lock;
-	std::condition_variable cond;
+	std::mutex cv_m;
+	std::condition_variable cv;
 	
 public:
-	Producer()
-	: consumers{nullptr}, cond_lock{cond_mut}
-	{}
-	
-	Producer(std::vector<Consumer> *consumers_ptr)
-	: consumers{consumers_ptr}, cond_lock{cond_mut}
+	Producer(std::vector<Consumer> *consumers_ptr = nullptr)
+	: consumers{consumers_ptr} 
 	{
-		for (auto &consumer : *consumers_ptr){
-			consumer.setProducerCondition(&cond);
+		if (consumers_ptr != nullptr){
+			for (auto &consumer : *consumers){
+				consumer.setProducerCV(&cv);
+			}
 		}
 	}
 	
-	Producer(Producer &) = delete;
+	Producer(const Producer &) = delete;
 	
 	// here comes the functors
 	int get(){
@@ -42,42 +42,37 @@ public:
 	}
 
 	void run(){
+		
 		while (RUN){
-			
 			bool all_full = true;
-			
+		
 			for (auto &consumer : *consumers){
-				
 				bool is_full;
-				
 				if ((is_full = consumer.full()) == false){
-					consumer.lockBuffer();
-					consumer.putConsumable(get());
-					consumer.unlockBuffer();
-					if (consumer.consumable == 1)
-						consumer.notify();
+					consumer.put(get());
 				}
-				
-				all_full &= is_full;
+				all_full = all_full && is_full;
 			}
 			
 			if (all_full){
 				dbg_printf("producer wait\n");
-				cond.wait(cond_lock);
-				dbg_printf("producer notified\n");
+				{
+					std::unique_lock<std::mutex> ul{cv_m};
+					cv.wait(ul);
+				}
+				dbg_printf("producer resumed\n");
 			}
-			/*else{
-				// human readable
-				// producer works fast
-				std::this_thread::sleep_for(std::chrono::milliseconds(1));
-			}*/
+			
 		}
 		
-		// warn everyone that it's over
+		// warn neighboor
 		for (auto &consumer : *consumers){
 			consumer.notify();
 		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		
 	}
 	
 };
+
+std::atomic<bool> Producer::RUN{true};
