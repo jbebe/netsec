@@ -42,6 +42,7 @@ public:
 			threads.emplace_back(&Consumer::run, &consumer);
 		}
 		
+		// wait or end
 		for (auto &thread : threads){
 			thread.join();
 		}
