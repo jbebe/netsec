@@ -26,9 +26,9 @@ class Consumer {
 	static int counter;
 	
 public:
-	static constexpr int BUFF_SIZE = 3;
+	static constexpr int BUFF_SIZE = 8;
 	
-protected:
+public:
 	// personal data
 	BufferEntry buffer[BUFF_SIZE];
 	BufferEntry *buffer_end;
@@ -54,6 +54,8 @@ public:
 	: Consumer() 
 	{}
 	
+	Consumer(Consumer &) = delete;
+	
 	void setProducerCondition(std::condition_variable *pc){
 		producer_cond = pc;
 	}
@@ -64,7 +66,7 @@ public:
 				ptr->consumed = false;
 				ptr->data = data;
 				++consumable;
-				dbg_printf("put [index %d, core %d]\n", (int)(ptr - buffer), id);
+				//dbg_printf("put [index %d, core %d]\n", (int)(ptr - buffer), id);
 				return;
 			}
 		}
@@ -75,7 +77,7 @@ public:
 			if (ptr->consumed == false){
 				ptr->consumed = true;
 				--consumable;
-				dbg_printf("get [index %d, core %d]\n", (int)(ptr - buffer), id);
+				//dbg_printf("get [index %d, core %d]\n", (int)(ptr - buffer), id);
 				return ptr->data;
 			}
 		}
@@ -114,7 +116,9 @@ public:
 				
 				unlockBuffer();
 				
-				//producer_cond->notify_one();
+				
+				if (consumable == BUFF_SIZE-1)
+					producer_cond->notify_one();
 				
 				// human readable
 				// consumer works slow
@@ -123,7 +127,8 @@ public:
 			else {
 				dbg_printf("core %d in wait\n", id);
 				// wait for data because it's empty
-				cond.wait(cond_lock, [this]{ return !this->empty(); });
+				cond.wait(cond_lock/*, [this]{ return !this->empty(); }*/);
+				dbg_printf("core %d notified\n", id);
 			}
 		}
 		

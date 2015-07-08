@@ -2,6 +2,7 @@
 
 #pragma GCC diagnostic push 
 #pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Wformat-security"
 
 #include <cstdlib>
 #include <cstdio>
