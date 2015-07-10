@@ -4,6 +4,7 @@
 #include <condition_variable>
 
 #include "debug.hpp"
+#include "Semaphore.hpp"
 
 template <typename Telem = int, int Tcapacity = 8>
 class MTStack {
@@ -11,55 +12,53 @@ private:
 	Telem buffer[Tcapacity];
 	std::mutex m;
 	int pos;
+
+	Semaphore get_s;
+	Semaphore put_s;
 	
-	std::mutex cv_m;
-	std::condition_variable cv;
+	static constexpr int POS_EMPTY = -1;
+	static constexpr int POS_FULL = Tcapacity - 1;
 	
 public:
 	MTStack(): pos{-1} {}
 	
 	Telem get(){
 		std::unique_lock<std::mutex> ul{m};
-		if /*empty*/ (pos == -1){
+		while (pos == POS_EMPTY){
 			ul.unlock();
-			{
-				//dbg_printf("get wait\n");
-				std::unique_lock<std::mutex> cv_ul{cv_m};
-				cv.wait(cv_ul, [this]{ return !this->empty(); });
-				//dbg_printf("get resumed\n");
-			}
+			get_s.wait();
+			get_s.reset();
 			ul.lock();
 		}
-		cv.notify_one();
-		return buffer[pos--];
+		Telem data = buffer[pos--];
+		if (pos == POS_FULL - 1){
+			put_s.notify();
+		}
+		return data;
 	}
 	
 	void put(Telem data){
 		std::unique_lock<std::mutex> ul{m};
-		if /*full*/ (pos == Tcapacity - 1){
+		while (pos == POS_FULL){
 			ul.unlock();
-			{
-				//dbg_printf("put wait\n");
-				std::unique_lock<std::mutex> cv_ul{cv_m};
-				cv.wait(cv_ul, [this]{ return !this->full(); });
-				//dbg_printf("put resumed\n");
-			}
+			put_s.wait();
+			put_s.reset();
 			ul.lock();
 		}
 		buffer[++pos] = data;
-		cv.notify_one();
-	}
-
-	size_t size(){
-		std::lock_guard<std::mutex> lg{m};
-		return static_cast<size_t>(pos + 1);
+		if (pos == POS_EMPTY + 1){
+			get_s.notify();
+		}
 	}
 	
-	bool empty(){ 
-		return size() == 0; 
+	bool try_put(Telem &data){
+		std::unique_lock<std::mutex> ul{m, std::defer_lock};
+		if (ul.try_lock() == false || pos == POS_FULL){
+			return false;
+		}
+		ul.unlock();
+		put(data);
+		return true;
 	}
 	
-	bool full(){
-		return size() == Tcapacity; 
-	}
 };

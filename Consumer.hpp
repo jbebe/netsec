@@ -24,21 +24,13 @@ public:
 	Consumer(Consumer &&moved_consumer): Consumer() {}
 	
 	Consumer(const Consumer &) = delete;
-	
-	/*void dbg_drawBuffer(const char *str = ""){
-		std::stringstream sb;
-		sb << "[core " << id << "] " << str << " [";
-		for (int i = 0; i <= BUFF_MAXINDEX; i++){
-			if (i <= filled_pos)
-				sb << "x";
-			else 
-				sb << ".";
-		}
-		dbg_printf("%s] fill_pos: %d\n", sb.str().c_str(), filled_pos);
-	}*/
 
 	void put(int data){
 		queue.put(data);
+	}
+	
+	bool try_put(int &data){
+		return queue.try_put(data);
 	}
 	
 	int get(){
@@ -46,9 +38,10 @@ public:
 	}
 	
 	void run(){
-		while (RUN){
+		while (1){
 			int data = get();
-			dbg_printf(".%n", &data);
+			dbg_printf("%n", &data);
+			++performance_counter;
 		}
 	}
 	

@@ -19,7 +19,7 @@ public:
 
 		// num. of consumers equals cores minus producer thread
 		consumers.reserve(cores - 1);
-		for (int i = 0; i < cores - 1; i++){
+		for (int i = 0; i < std::max(cores - 1, 1); i++){
 			consumers.emplace_back();
 		}
 
@@ -46,8 +46,5 @@ public:
 		for (auto &thread : threads){
 			thread.join();
 		}
-		
-		// performance score
-		dbg_printf("Exiting...\n");
 	}
 };
