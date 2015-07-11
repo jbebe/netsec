@@ -29,7 +29,7 @@ public:
 		queue.put(data);
 	}
 	
-	bool try_put(int &data){
+	bool try_put(int data){
 		return queue.try_put(data);
 	}
 	
@@ -40,8 +40,7 @@ public:
 	void run(){
 		while (1){
 			int data = get();
-			dbg_printf("%n", &data);
-			++performance_counter;
+			dbg_printf("%d\n", data);
 		}
 	}
 	

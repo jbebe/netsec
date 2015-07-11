@@ -2,6 +2,7 @@
 
 #include <mutex>
 #include <condition_variable>
+#include <type_traits>
 
 #include "debug.hpp"
 #include "Semaphore.hpp"
@@ -24,6 +25,7 @@ public:
 	
 	Telem get(){
 		std::unique_lock<std::mutex> ul{m};
+
 		while (pos == POS_EMPTY){
 			ul.unlock();
 			get_s.wait();
@@ -37,8 +39,11 @@ public:
 		return data;
 	}
 	
+	template <bool Tlocked = false>
 	void put(Telem data){
-		std::unique_lock<std::mutex> ul{m};
+		typedef std::unique_lock<std::mutex> uniq_lck;
+		uniq_lck ul = Tlocked ? uniq_lck{m, std::adopt_lock} : uniq_lck{m};
+
 		while (pos == POS_FULL){
 			ul.unlock();
 			put_s.wait();
@@ -51,13 +56,15 @@ public:
 		}
 	}
 	
-	bool try_put(Telem &data){
-		std::unique_lock<std::mutex> ul{m, std::defer_lock};
-		if (ul.try_lock() == false || pos == POS_FULL){
+	bool try_put(Telem data){
+		if (m.try_lock() == false){
 			return false;
 		}
-		ul.unlock();
-		put(data);
+		if (pos == POS_FULL){
+			m.unlock();
+			return false;
+		}
+		put<true>(data);
 		return true;
 	}
 	

@@ -4,4 +4,4 @@
 
 static std::atomic<bool> RUN;
 
-std::atomic<int> performance_counter{0};
+std::atomic<unsigned long> performance_counter{0};

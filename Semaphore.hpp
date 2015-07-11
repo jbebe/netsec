@@ -24,6 +24,14 @@ public:
 			cv.wait(ul);
 		}
 	}
+	void wait(std::function<bool()> fn) {
+		std::unique_lock<std::mutex> ul(m);
+		while (!fn()){
+			while (!ready){
+				cv.wait(ul);
+			}
+		}
+	}
 	bool is_ready(){
 		std::unique_lock<std::mutex> ul(m);
 		return ready;

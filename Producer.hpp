@@ -18,7 +18,6 @@ class Producer {
 	// private data
 	std::mutex cv_m;
 	std::condition_variable cv;
-	unsigned long int counter = 0;
 	
 public:
 	Producer(std::vector<Consumer> *consumers_ptr = nullptr)
@@ -38,13 +37,13 @@ public:
 			auto data = get();
 			while (1){
 				for (auto &consumer : *consumers){
-					//consumer.put(get());counter++;
+					// sync consumer.put(get());
+					// async-ish:
 					if (consumer.try_put(data)){
 						data = get();
-						counter++;
 					}
 				}
-				if (counter > 2000000UL) break;
+				if (performance_counter > 2000000UL) break;
 			}
 		}
 		auto t_end = std::chrono::high_resolution_clock::now();
