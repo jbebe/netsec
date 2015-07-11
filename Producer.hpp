@@ -10,31 +10,31 @@
 #include "Globals.hpp"
 #include "Consumer.hpp"
 
+template <typename Tconsumer, typename Telem>
 class Producer {
 
 	// foreign data
-	std::vector<Consumer> *consumers;
+	std::vector<Tconsumer> *consumers;
 	
 	// private data
 	std::mutex cv_m;
 	std::condition_variable cv;
 	
 public:
-	Producer(std::vector<Consumer> *consumers_ptr = nullptr)
+	Producer(std::vector<Tconsumer> *consumers_ptr = nullptr)
 	: consumers{consumers_ptr} 
 	{}
 	
 	Producer(const Producer &) = delete;
 	
-	int get(){
+	Telem get(){
 		return rand();
 	}
 
 	void run(){
-		
-		auto t_start = std::chrono::high_resolution_clock::now();
+		//auto t_start = std::chrono::high_resolution_clock::now();
 		{
-			auto data = get();
+			Telem data = get();
 			while (1){
 				for (auto &consumer : *consumers){
 					// sync consumer.put(get());
@@ -43,12 +43,9 @@ public:
 						data = get();
 					}
 				}
-				if (performance_counter > 2000000UL) break;
 			}
 		}
-		auto t_end = std::chrono::high_resolution_clock::now();
-		dbg_printf("time: %lf ms\n", std::chrono::duration<double, std::milli>(t_end-t_start).count());
-
+		//auto t_end = std::chrono::high_resolution_clock::now();
+		//dbg_printf("time: %lf ms\n", std::chrono::duration<double, std::milli>(t_end-t_start).count());
 	}
-	
 };

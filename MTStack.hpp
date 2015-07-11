@@ -7,7 +7,7 @@
 #include "debug.hpp"
 #include "Semaphore.hpp"
 
-template <typename Telem = int, int Tcapacity = 8>
+template <typename Telem, int Tcapacity>
 class MTStack {
 private:
 	Telem buffer[Tcapacity];

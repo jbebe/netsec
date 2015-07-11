@@ -12,7 +12,7 @@
 
 class Netsec { 
 
-	CoProWrapper cpw;
+	CoProWrapper<> cpw;
 	
 public:
 	Netsec(const char *interface){

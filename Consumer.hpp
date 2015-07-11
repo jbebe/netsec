@@ -12,9 +12,10 @@
 #include "Globals.hpp"
 #include "MTStack.hpp"
 
+template <typename Telem, int Tcapacity>
 class Consumer {
 
-	MTStack<> queue;
+	MTStack<Telem, Tcapacity> queue;
 	std::mutex cond_mut;
 	std::condition_variable cond;
 	
@@ -25,21 +26,21 @@ public:
 	
 	Consumer(const Consumer &) = delete;
 
-	void put(int data){
+	void put(Telem data){
 		queue.put(data);
 	}
 	
-	bool try_put(int data){
+	bool try_put(Telem data){
 		return queue.try_put(data);
 	}
 	
-	int get(){
+	Telem get(){
 		return queue.get();
 	}
 	
 	void run(){
 		while (1){
-			int data = get();
+			Telem data = get();
 			dbg_printf("%d\n", data);
 		}
 	}

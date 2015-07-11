@@ -6,10 +6,16 @@
 #include "Consumer.hpp"
 #include "Producer.hpp"
 
+template <
+	typename Telem = int, 
+	int Tcapacity = 8,
+	typename Tconsumer = Consumer<Telem, Tcapacity>, 
+	typename Tproducer = Producer<Tconsumer, Telem>
+>
 class CoProWrapper {
 	
-	Producer producer;
-	std::vector<Consumer> consumers;
+	Tproducer producer;
+	std::vector<Tconsumer> consumers;
 	std::vector<std::thread> threads;
 	
 public:
@@ -24,7 +30,7 @@ public:
 		}
 
 		// number of producers equals number of interfaces
-		new (static_cast<void*>(&producer)) Producer(&consumers);
+		new (static_cast<void*>(&producer)) Tproducer(&consumers);
 
 		threads.reserve(cores);
 	}
@@ -32,14 +38,14 @@ public:
 	void start(){
 		
 		// start flag
-		RUN = true;
+		//RUN = true;
 		
 		// start producer(s)
-		threads.emplace_back(&Producer::run, &producer);
+		threads.emplace_back(&Tproducer::run, &producer);
 		
 		// start consumers
 		for (auto &consumer : consumers){
-			threads.emplace_back(&Consumer::run, &consumer);
+			threads.emplace_back(&Tconsumer::run, &consumer);
 		}
 		
 		// wait for end
