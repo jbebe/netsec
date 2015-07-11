@@ -7,7 +7,7 @@
 #include <thread>
 #include <sstream>
 
-#include "Globals.hpp"
+#include "../Globals.hpp"
 #include "Consumer.hpp"
 
 template <typename Tconsumer, typename Telem>

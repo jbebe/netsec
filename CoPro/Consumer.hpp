@@ -8,8 +8,8 @@
 #include <thread>
 #include <type_traits>
 
-#include "debug.hpp"
-#include "Globals.hpp"
+#include "../debug.hpp"
+#include "../Globals.hpp"
 #include "MTStack.hpp"
 
 template <typename Telem, int Tcapacity>

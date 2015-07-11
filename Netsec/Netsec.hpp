@@ -5,10 +5,10 @@
 #include <initializer_list>
 #include <thread>
 
-#include "Globals.hpp"
-#include "Signals.hpp"
-#include "debug.hpp"
-#include "CoProWrapper.hpp"
+#include "../Globals.hpp"
+#include "../Signals.hpp"
+#include "../debug.hpp"
+#include "../CoPro/CoProWrapper.hpp"
 
 class Netsec { 
 
