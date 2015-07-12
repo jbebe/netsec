@@ -13,12 +13,8 @@
 template <typename Tconsumer, typename Telem>
 class Producer {
 
-	// foreign data
+protected:
 	std::vector<Tconsumer> *consumers;
-	
-	// private data
-	std::mutex cv_m;
-	std::condition_variable cv;
 	
 public:
 	Producer(std::vector<Tconsumer> *consumers_ptr = nullptr)

@@ -38,7 +38,7 @@ public:
 	void start(){
 		
 		// start flag
-		//RUN = true;
+		// RUN = true;
 		
 		// start producer(s)
 		threads.emplace_back(&Tproducer::run, &producer);

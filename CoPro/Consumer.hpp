@@ -30,18 +30,19 @@ public:
 		queue.put(data);
 	}
 	
-	bool try_put(Telem data){
+	bool try_put(Telem *data){
 		return queue.try_put(data);
 	}
 	
-	Telem get(){
-		return queue.get();
+	void get(Telem *data_in){
+		queue.get(data_in);
 	}
 	
 	void run(){
 		while (1){
-			Telem data = get();
-			dbg_printf("%d\n", data);
+			Telem data;
+			get(&data);
+			dbg_printf("%d, ", data);
 		}
 	}
 	

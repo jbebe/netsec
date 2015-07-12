@@ -23,7 +23,7 @@ private:
 public:
 	MTStack(): pos{-1} {}
 	
-	Telem get(){
+	void get(Telem *data_in){
 		std::unique_lock<std::mutex> ul{m};
 
 		while (pos == POS_EMPTY){
@@ -32,15 +32,14 @@ public:
 			get_s.reset();
 			ul.lock();
 		}
-		Telem data = buffer[pos--];
+		*data_in = buffer[pos--];
 		if (pos == POS_FULL - 1){
 			put_s.notify();
 		}
-		return data;
 	}
 	
 	template <bool Tlocked = false>
-	void put(Telem data){
+	void put(Telem *data){
 		typedef std::unique_lock<std::mutex> uniq_lck;
 		uniq_lck ul = Tlocked ? uniq_lck{m, std::adopt_lock} : uniq_lck{m};
 
@@ -50,13 +49,13 @@ public:
 			put_s.reset();
 			ul.lock();
 		}
-		buffer[++pos] = data;
+		buffer[++pos] = *data;
 		if (pos == POS_EMPTY + 1){
 			get_s.notify();
 		}
 	}
 	
-	bool try_put(Telem data){
+	bool try_put(Telem *data){
 		if (m.try_lock() == false){
 			return false;
 		}
