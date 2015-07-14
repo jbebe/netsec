@@ -15,15 +15,17 @@
 class Netsec { 
 
 	static constexpr int BUFFER_SIZE = 8;
-	typedef int Elem;
-	typedef Consumer<Elem, BUFFER_SIZE> default_consumer;
+	typedef PacketElem elem_type;
+	typedef Consumer<elem_type, BUFFER_SIZE> default_consumer;
+	typedef Producer<default_consumer, elem_type> default_producer;
 	
-	CoProWrapper<Elem, BUFFER_SIZE, default_consumer, PacketProducer> cpw;
+	CoProWrapper<elem_type, BUFFER_SIZE, default_consumer, PacketProducer> cpw;
 	
 public:
 	Netsec(const char *interface){
 		// init signals
 		init_signals();
+		
 	}
 	
 	void start(){

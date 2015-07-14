@@ -42,7 +42,8 @@ public:
 		while (1){
 			Telem data;
 			get(&data);
-			dbg_printf("%d, ", data);
+			std::string log{data};
+			dbg_printf("%s", log.c_str());
 		}
 	}
 	

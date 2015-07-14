@@ -33,8 +33,6 @@ public:
 			Telem data = get();
 			while (1){
 				for (auto &consumer : *consumers){
-					// sync consumer.put(get());
-					// async-ish:
 					if (consumer.try_put(data)){
 						data = get();
 					}

@@ -2,6 +2,7 @@
 
 #include <thread>
 #include <vector>
+#include <tuple>
 
 #include "Consumer.hpp"
 #include "Producer.hpp"
@@ -9,17 +10,20 @@
 template <
 	typename Telem = int, 
 	int Tcapacity = 8,
-	typename Tconsumer = Consumer<Telem, Tcapacity>, 
+	typename Tconsumer = Consumer<Telem, Tcapacity>,
 	typename Tproducer = Producer<Tconsumer, Telem>
 >
 class CoProWrapper {
 	
+private:
 	Tproducer producer;
 	std::vector<Tconsumer> consumers;
 	std::vector<std::thread> threads;
 	
 public:
-	CoProWrapper(){
+	//CoProWrapper(){}
+	
+	CoProWrapper(/*std::tuple<TCtorArgs...> tuple_cons, std::tuple<TCtorArgs...> tuple_prod*/){
 
 		int cores = std::max<int>(std::thread::hardware_concurrency(), 1);
 

@@ -1,30 +1,45 @@
 #pragma once
 
+#include <pcap.h>
+
 #include "../CoPro/Consumer.hpp"
 #include "../CoPro/Producer.hpp"
 #include "PacketElem.hpp"
+#include "Netsec.hpp"
 
-typedef Consumer<int, 8> default_consumer;
-typedef Producer<default_consumer, int> default_producer;
+static constexpr int BUFFER_SIZE = 8;
+typedef PacketElem elem_type;
+typedef Consumer<elem_type, BUFFER_SIZE> default_consumer;
+typedef Producer<default_consumer, elem_type> default_producer;
 
 class PacketProducer : public default_producer {
-		
-	int packet;
+
+	PacketElem temp_packet;
+	pcap_t* pcap_handle;
 	
 public:
-	using default_producer::Producer;
+	PacketProducer(std::vector<default_consumer> *consumers_ptr = nullptr, const char *interface_name = "wlan0")
+	: Producer(consumers_ptr)
+	{
+		char errbuf[PCAP_ERRBUF_SIZE] = "";
+		pcap_handle = pcap_open_live(interface_name, PacketElem::MTU, 1, 1000, errbuf);
+		if (strlen(errbuf) != 0) {
+			throw std::system_error{std::error_code{}, errbuf};
+		}
+	}
 	
-	int *get(){
-		packet = 5;
-		return &packet;
+	PacketElem *get(){
+		struct pcap_pkthdr hdr;
+		const uint8_t *data;
+		while ((data = pcap_next(pcap_handle, &hdr)) == NULL);
+		new (static_cast<void *>(&temp_packet)) PacketElem{data, hdr.caplen};
+		return &temp_packet;
 	}
 	
 	void run(){
-		int *data = get();
+		PacketElem *data = get();
 		while (1){
 			for (auto &consumer : *consumers){
-				// sync consumer.put(get());
-				// async-ish:
 				if (consumer.try_put(data)){
 					data = get();
 				}
@@ -32,4 +47,10 @@ public:
 		}
 	}
 	
+	~PacketProducer(){
+		struct pcap_stat stat;
+		pcap_stats(pcap_handle, &stat);
+		dbg_printf("Received: %u, dropped: %u, dropped by nic: %u\n", stat.ps_recv, stat.ps_drop, stat.ps_ifdrop);
+		pcap_close(pcap_handle);
+	}
 };
