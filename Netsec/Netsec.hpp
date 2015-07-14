@@ -17,9 +17,9 @@ class Netsec {
 	static constexpr int BUFFER_SIZE = 8;
 	typedef PacketElem elem_type;
 	typedef Consumer<elem_type, BUFFER_SIZE> default_consumer;
-	typedef Producer<default_consumer, elem_type> default_producer;
+	typedef Producer<default_consumer> default_producer;
 	
-	CoProWrapper<elem_type, BUFFER_SIZE, default_consumer, PacketProducer> cpw;
+	CoProWrapper<elem_type, BUFFER_SIZE, default_consumer, PacketProducer<default_consumer>> cpw;
 	
 public:
 	Netsec(const char *interface){

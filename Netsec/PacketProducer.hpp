@@ -10,17 +10,16 @@
 static constexpr int BUFFER_SIZE = 8;
 typedef PacketElem elem_type;
 typedef Consumer<elem_type, BUFFER_SIZE> default_consumer;
-typedef Producer<default_consumer, elem_type> default_producer;
+typedef Producer<default_consumer> default_producer;
 
+template <class Tconsumer>
 class PacketProducer : public default_producer {
 
 	PacketElem temp_packet;
 	pcap_t* pcap_handle;
 	
 public:
-	PacketProducer(std::vector<default_consumer> *consumers_ptr = nullptr, const char *interface_name = "wlan0")
-	: Producer(consumers_ptr)
-	{
+	PacketProducer(const char *interface_name = "wlan0"){
 		char errbuf[PCAP_ERRBUF_SIZE] = "";
 		pcap_handle = pcap_open_live(interface_name, PacketElem::MTU, 1, 1000, errbuf);
 		if (strlen(errbuf) != 0) {
@@ -36,7 +35,7 @@ public:
 		return &temp_packet;
 	}
 	
-	void run(){
+	void run(std::vector<Tconsumer> *consumers){
 		PacketElem *data = get();
 		while (1){
 			for (auto &consumer : *consumers){

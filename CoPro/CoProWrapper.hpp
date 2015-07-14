@@ -11,7 +11,7 @@ template <
 	typename Telem = int, 
 	int Tcapacity = 8,
 	typename Tconsumer = Consumer<Telem, Tcapacity>,
-	typename Tproducer = Producer<Tconsumer, Telem>
+	typename Tproducer = Producer<Tconsumer>
 >
 class CoProWrapper {
 	
@@ -34,7 +34,7 @@ public:
 		}
 
 		// number of producers equals number of interfaces
-		new (static_cast<void*>(&producer)) Tproducer(&consumers);
+		//new (static_cast<void*>(&producer)) Tproducer();
 
 		threads.reserve(cores);
 	}
@@ -45,7 +45,7 @@ public:
 		// RUN = true;
 		
 		// start producer(s)
-		threads.emplace_back(&Tproducer::run, &producer);
+		threads.emplace_back(&Tproducer::run, &producer, &consumers);
 		
 		// start consumers
 		for (auto &consumer : consumers){

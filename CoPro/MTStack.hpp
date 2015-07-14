@@ -1,10 +1,7 @@
 #pragma once
 
 #include <mutex>
-#include <condition_variable>
-#include <type_traits>
 
-#include "../debug.hpp"
 #include "Semaphore.hpp"
 
 template <typename Telem, int Tcapacity>
