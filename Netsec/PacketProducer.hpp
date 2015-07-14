@@ -1,27 +1,20 @@
 #pragma once
 
+#include <cstdlib>
 #include <pcap.h>
 
-#include "../CoPro/Consumer.hpp"
-#include "../CoPro/Producer.hpp"
 #include "PacketElem.hpp"
-#include "Netsec.hpp"
-
-static constexpr int BUFFER_SIZE = 8;
-typedef PacketElem elem_type;
-typedef Consumer<elem_type, BUFFER_SIZE> default_consumer;
-typedef Producer<default_consumer> default_producer;
 
 template <class Tconsumer>
-class PacketProducer : public default_producer {
+class PacketProducer {
 
 	PacketElem temp_packet;
 	pcap_t* pcap_handle;
 	
 public:
-	PacketProducer(const char *interface_name = "wlan0"){
+	PacketProducer(const char *interface){
 		char errbuf[PCAP_ERRBUF_SIZE] = "";
-		pcap_handle = pcap_open_live(interface_name, PacketElem::MTU, 1, 1000, errbuf);
+		pcap_handle = pcap_open_live(interface, PacketElem::MTU, 1, 1000, errbuf);
 		if (strlen(errbuf) != 0) {
 			throw std::system_error{std::error_code{}, errbuf};
 		}
@@ -49,7 +42,8 @@ public:
 	~PacketProducer(){
 		struct pcap_stat stat;
 		pcap_stats(pcap_handle, &stat);
-		dbg_printf("Received: %u, dropped: %u, dropped by nic: %u\n", stat.ps_recv, stat.ps_drop, stat.ps_ifdrop);
+		dbg_printf("Received: %u, dropped: %u, dropped by nic: %u\n", 
+				stat.ps_recv, stat.ps_drop, stat.ps_ifdrop);
 		pcap_close(pcap_handle);
 	}
 };

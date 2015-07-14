@@ -8,9 +8,7 @@ template <typename Tconsumer>
 class Producer {
 
 public:
-	int get(){
-		return rand();
-	}
+	int get(){ return 0; }
 
 	void run(std::vector<Tconsumer> *consumers){
 		int data = get();

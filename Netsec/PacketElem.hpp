@@ -17,12 +17,10 @@ public:
 	PacketElem() {}
 	
 	PacketElem(const uint8_t *data_in, size_t size): size{size} {
-		if (size <= MTU){
+		if (size <= MTU)
 			memcpy(data, data_in, size);
-		}
-		else {
-			dbg_printf("%s(%d): size is bigger than MTU!\n", __FILE__,  __LINE__);
-		}
+		else
+			dbg_printf("%s(%d): size is bigger than MTU!\n");
 	}
 	
 	size_t getSize(){
@@ -39,7 +37,7 @@ public:
 		for (int i = 0; i < std::min<int>(size, 5); i++){
 			buff_ptr += sprintf(buff_ptr, "%02X", data[i]);
 		}
-		sprintf(buff_ptr, "... size: %zu\n", size);
+		sprintf(buff_ptr, "... size: %zu", size);
 		return std::string{buff};
 	}
 	

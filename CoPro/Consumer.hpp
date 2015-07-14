@@ -43,7 +43,7 @@ public:
 			Telem data;
 			get(&data);
 			std::string log{data};
-			dbg_printf("%s", log.c_str());
+			dbg_printf("%s\n", log.c_str());
 		}
 	}
 	
