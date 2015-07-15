@@ -12,7 +12,7 @@
 
 class Netsec { 
 
-	using PacketConsumerClass = PacketConsumer<RawPacketElem, 8 /* buffer size */>;
+	using PacketConsumerClass = PacketConsumer<8 /* buffer size */>;
 	using PacketProducerClass = PcapProducer<PacketConsumerClass>;
 	
 	// raw packet level
