@@ -6,21 +6,18 @@
 #include <thread>
 
 #include "../Signals.hpp"
-#include "../CoPro/Consumer.hpp"
-#include "../CoPro/Producer.hpp"
-#include "PacketProducer.hpp"
-#include "PacketElem.hpp"
+#include "PcapProducer.hpp"
+#include "RawPacketElem.hpp"
+#include "PacketConsumer.hpp"
 
 class Netsec { 
 
-	static constexpr int BUFFER_SIZE = 8;
-	using elem_type = PacketElem;
-	using default_consumer = Consumer<elem_type, BUFFER_SIZE>;
-	using PacketProducerClass = PacketProducer<default_consumer>;
+	using PacketConsumerClass = PacketConsumer<RawPacketElem, 8 /* buffer size */>;
+	using PacketProducerClass = PcapProducer<PacketConsumerClass>;
 	
 	// raw packet level
 	PacketProducerClass producer;
-	std::vector<default_consumer> consumers;
+	std::vector<PacketConsumerClass> consumers;
 	std::vector<std::thread> threads;
 	
 public:
@@ -53,7 +50,7 @@ public:
 		
 		// start consumers
 		for (auto &consumer : consumers){
-			threads.emplace_back(&default_consumer::run, &consumer);
+			threads.emplace_back(&PacketConsumerClass::run, &consumer);
 		}
 		
 		// wait for end
