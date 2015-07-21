@@ -26,17 +26,38 @@ class PacketConsumer {
 	MTStack<RawPacketElem, Tcapacity> queue;
 	std::mutex cond_mut;
 	std::condition_variable cond;
-	
-	// plugins
 	ParsedPacketElem parsed_elem;
 	
-	// debug
-	std::stringstream dbg_str;
+	// plugins
+	template <typename Theader>
+	using parser_func = std::function<void(Theader*, ParsedPacketElem*)>;
+	parser_func<iphdr> plugin_ipv4;
+	parser_func<ip6_hdr> plugin_ipv6;
+	parser_func<tcphdr> plugin_tcp;
+	parser_func<udphdr> plugin_udp;
+	parser_func<uint8_t> plugin_app;
 	
 public:
-	PacketConsumer(): dbg_str{} {}
+	PacketConsumer(
+		parser_func<iphdr> p_ipv4 = parser_func<iphdr>{},
+		parser_func<ip6_hdr> p_ipv6 = parser_func<ip6_hdr>{},
+		parser_func<tcphdr> p_tcp = parser_func<tcphdr>{}, 
+		parser_func<udphdr> p_udp = parser_func<udphdr>{},
+		parser_func<uint8_t> p_app = parser_func<uint8_t>{}
+	)
+	: plugin_ipv4{p_ipv4}, plugin_ipv6{p_ipv6}, plugin_tcp{p_tcp}, 
+		plugin_udp{p_udp}, plugin_app{p_app}
+	{}
 	
-	PacketConsumer(PacketConsumer &&moved_consumer): PacketConsumer() {}
+	PacketConsumer(PacketConsumer &&moved_consumer)
+	: PacketConsumer()
+	{
+		plugin_ipv4 = moved_consumer.plugin_ipv4;
+		plugin_ipv6 = moved_consumer.plugin_ipv6;
+		plugin_tcp = moved_consumer.plugin_tcp;
+		plugin_udp = moved_consumer.plugin_udp;
+		plugin_app = moved_consumer.plugin_app;
+	}
 	
 	PacketConsumer(const PacketConsumer &) = delete;
 
@@ -52,39 +73,6 @@ public:
 		queue.get(data_in);
 	}
 	
-	void pluginsIPv4(iphdr *data){
-		uint32_t ip_addr = ntohl(data->saddr);
-		struct _ipa { uint8_t d, c, b, a; };
-		_ipa *padded_ip = (_ipa*)(&ip_addr);
-		dbg_str << 1*(padded_ip->a) << "." << 1*(padded_ip->b) << "." << 1*(padded_ip->c) << "." << 1*(padded_ip->d);
-	}
-	
-	void pluginsIPv6(ip6_hdr *data){
-		
-	}
-	
-	void pluginsTCP(tcphdr *data){
-		dbg_str << ":" << ntohs(data->dest);
-	}
-	
-	void pluginsUDP(udphdr *data){
-		
-	}
-	
-	void pluginsAPP(uint8_t *data){
-		dbg_str << " - ";
-		for (int i = 0; i < 40; i++){
-			char out;
-			if (data[i] >= 32 && data[i] <= 126){
-				out = data[i];
-			}
-			else {
-				out = '.';
-			}
-			dbg_str << out;
-		}
-	}
-	
 	void parse(RawPacketElem *data){
 		uint8_t *tcp_layer;
 		iphdr *ip_layer = (iphdr*)(data->getData());
@@ -94,12 +82,12 @@ public:
 			case IPV4_VER:
 				tcp_layer = (uint8_t*)ip_layer + (ip_layer->ihl * 4);
 				protocol = ip_layer->protocol;
-				pluginsIPv4(ip_layer);
+				plugin_ipv4(ip_layer, &parsed_elem);
 				break;
 			case IPV6_VER:
 				tcp_layer = (uint8_t*)ip_layer + sizeof(ip6_hdr);
 				protocol = ((ip6_hdr*)ip_layer)->ip6_ctlun.ip6_un1.ip6_un1_nxt;
-				pluginsIPv6((ip6_hdr*)ip_layer);
+				plugin_ipv6((ip6_hdr*)ip_layer, &parsed_elem);
 				break;
 			default:
 				tcp_layer = nullptr;
@@ -113,11 +101,11 @@ public:
 		switch (protocol){
 			case IPPROTO_TCP:
 				app_layer = (uint8_t*)tcp_layer + (((tcphdr*)tcp_layer)->doff * 4);
-				pluginsTCP((tcphdr*)tcp_layer);
+				plugin_tcp((tcphdr*)tcp_layer, &parsed_elem);
 				break;
 			case IPPROTO_UDP:
 				app_layer = (uint8_t*)tcp_layer + sizeof(udphdr);
-				pluginsUDP((udphdr*)tcp_layer);
+				plugin_udp((udphdr*)tcp_layer, &parsed_elem);
 				break;
 			default: 
 				app_layer = nullptr;
@@ -125,7 +113,7 @@ public:
 		}
 		if (app_layer == nullptr) return;
 		
-		pluginsAPP(app_layer);
+		plugin_app(app_layer, &parsed_elem);
 	}	
 	
 	void run(){
@@ -134,9 +122,6 @@ public:
 			get(&data);
 			parse(&data);
 			
-			dbg_printf("%s\n", dbg_str.str().c_str());
-			dbg_str.str(std::string{});
-			dbg_str.clear();
 		}
 	}
 	

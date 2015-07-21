@@ -4,21 +4,30 @@
 #include <vector>
 #include <initializer_list>
 #include <thread>
+#include <unordered_map>
+
+#include <netinet/in.h>
 
 #include "../Signals.hpp"
-#include "PcapProducer.hpp"
+#include "PacketProducer.hpp"
 #include "RawPacketElem.hpp"
 #include "PacketConsumer.hpp"
+#include "ConsumerPlugins.hpp"
+#include "ParsedPacketElem.hpp"
+#include "StatsBuffer.hpp"
 
 class Netsec { 
 
 	using PacketConsumerClass = PacketConsumer<8 /* buffer size */>;
-	using PacketProducerClass = PcapProducer<PacketConsumerClass>;
+	using PacketProducerClass = PacketProducer<PacketConsumerClass>;
 	
 	// raw packet level
 	PacketProducerClass producer;
 	std::vector<PacketConsumerClass> consumers;
 	std::vector<std::thread> threads;
+	
+	// main (stats) buffer
+	StatsBuffer stats_data;
 	
 public:
 	Netsec(const char *interface): producer{interface} {
@@ -32,7 +41,8 @@ public:
 		int consumers_num = std::max(cores - 1, 1);
 		consumers.reserve(consumers_num);
 		for (int i = 0; i < consumers_num; i++){
-			consumers.emplace_back();
+			// ctor with every layer of plugins
+			consumers.emplace_back(plugin_IPv4, plugin_IPv6, plugin_TCP, plugin_UDP, plugin_APP);
 		}
 
 		// number of producers equals number of interfaces
