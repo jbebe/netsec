@@ -11,8 +11,10 @@ private:
 	};
 	
 public:
-	IPv46(const uint32_t *ptr){
-		memcpy(fmt_32, ptr, sizeof(fmt_32));
+	IPv46(const uint32_t *ptr = nullptr){
+		if (ptr != nullptr){
+			memcpy(fmt_32, ptr, sizeof(fmt_32));
+		}
 	}
 	
 	static IPv46 fromIPv4(const in_addr *addr){
@@ -22,6 +24,11 @@ public:
 	
 	bool operator == (const IPv46 &rhs) const {
 		return memcmp(fmt_32, rhs.fmt_32, sizeof(fmt_32)) == 0;
+	}
+	
+	IPv46 &operator = (const IPv46 &rhs){
+		memcpy(fmt_32, rhs.fmt_32, sizeof(fmt_32));
+		return *this;
 	}
 	
 	class Hash {

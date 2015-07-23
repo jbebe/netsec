@@ -2,18 +2,22 @@
 
 #include <cstdint>
 
+#include "IPv46.hpp"
+
 struct ParsedPacketElem {
 	
 	struct {
+		IPv46 src_addr;
+		IPv46 dest_addr;
 		uint8_t ttl;
-	} ip;
+	} ip_layer;
 
 	struct {
 		
-	} tcp;
+	} tcp_layer;
 
 	struct {
 
-	} app;
+	} app_layer;
 	
 };

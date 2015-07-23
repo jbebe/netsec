@@ -42,7 +42,7 @@ public:
 		consumers.reserve(consumers_num);
 		for (int i = 0; i < consumers_num; i++){
 			// ctor with every layer of plugins
-			consumers.emplace_back(plugin_IPv4, plugin_IPv6, plugin_TCP, plugin_UDP, plugin_APP);
+			consumers.emplace_back(&stats_data, plugin_IPv4, plugin_IPv6, plugin_TCP, plugin_UDP, plugin_APP);
 		}
 
 		// number of producers equals number of interfaces

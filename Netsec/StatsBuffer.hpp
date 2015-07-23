@@ -6,6 +6,7 @@
 
 #include "ParsedPacketElem.hpp"
 #include "IPv46.hpp"
+#include "../Globals.hpp"
 
 class StatsBuffer {
 
@@ -14,20 +15,22 @@ private:
 	std::mutex m;
 	
 public:
-	StatsBuffer(){}
-	
 	void put(const IPv46 *ip, const ParsedPacketElem *elem){
-		m.lock();
-		auto stat = stats_data.end();//stats_data.find(*ip);
+		std::lock_guard<std::mutex> lg{m};
+		auto stat = stats_data.find(*ip);
 		if (stat != stats_data.end()){
 			stat->second.push_back(*elem);
 		}
 		else {
-			stats_data.emplace(*ip, std::vector<ParsedPacketElem>{});
+			std::vector<ParsedPacketElem> tmp;
+			tmp.reserve(STATS_BUFFER_ENTRY_SIZE);
+			stats_data.emplace(*ip, tmp);
 		}
 	}
 	
-	void get(){
+	void get(const IPv46 *ip, ParsedPacketElem *elem){
+		std::lock_guard<std::mutex> lg{m};
+		
 		
 	}
 };
