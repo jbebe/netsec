@@ -15,7 +15,7 @@
 #include "../CoPro/MTStack.hpp"
 #include "RawPacketElem.hpp"
 #include "ParsedPacketElem.hpp"
-#include "StatsBuffer.hpp"
+#include "Evaluator.hpp"
 
 #define IPV4_VER 4
 #define IPV6_VER 6
@@ -29,7 +29,7 @@ class PacketConsumer {
 	std::condition_variable cond;
 	
 	// stats buffer ptr
-	StatsBuffer *stats_data_ptr;
+	Evaluator *stats;
 	
 	// plugins
 	template <typename Theader>
@@ -42,20 +42,20 @@ class PacketConsumer {
 	
 public:
 	PacketConsumer(
-		StatsBuffer *sb_ptr,
+		Evaluator *stats_ptr,
 		parser_fn<iphdr> p_ipv4 = parser_fn<iphdr>{},
 		parser_fn<ip6_hdr> p_ipv6 = parser_fn<ip6_hdr>{},
 		parser_fn<tcphdr> p_tcp = parser_fn<tcphdr>{}, 
 		parser_fn<udphdr> p_udp = parser_fn<udphdr>{},
 		parser_fn<uint8_t> p_app = parser_fn<uint8_t>{}
 	)
-	: stats_data_ptr{sb_ptr},
+	: stats{stats_ptr},
 		plugin_ipv4{p_ipv4}, plugin_ipv6{p_ipv6}, plugin_tcp{p_tcp}, 
 		plugin_udp{p_udp}, plugin_app{p_app}
 	{}
 	
 	PacketConsumer(PacketConsumer &&moved_consumer)
-	: PacketConsumer(moved_consumer.stats_data_ptr,
+	: PacketConsumer(moved_consumer.stats,
 		moved_consumer.plugin_ipv4,
 		moved_consumer.plugin_ipv6,
 		moved_consumer.plugin_tcp,
@@ -128,8 +128,8 @@ public:
 			
 			get(&raw_data);
 			parse(&raw_data, &parsed_data);
-			stats_data_ptr->put(&(parsed_data.ip_layer.src_addr), &parsed_data);
-			// put -> get 
+			stats->put(&(parsed_data.ip_layer.src_addr), &parsed_data);
+			stats->evaluate();
 		}
 	}
 	

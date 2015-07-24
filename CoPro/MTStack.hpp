@@ -4,12 +4,20 @@
 
 #include "Semaphore.hpp"
 
+/*
+ MTStack stands for Multi-Threaded Stack
+ It supports a basic single producer single consumer system 
+ with an additional try_put method supporting performance
+ because the producer can cycle through multiple MTStack
+ */
+
 template <typename Telem, int Tcapacity>
 class MTStack {
+	
 private:
 	Telem buffer[Tcapacity];
-	std::mutex m;
 	int pos;
+	std::mutex m;
 
 	Semaphore get_s;
 	Semaphore put_s;
@@ -19,6 +27,14 @@ private:
 	
 public:
 	MTStack(): pos{-1} {}
+	
+	/*
+	 these should not happen
+	 */
+	MTStack(MTStack &&)               = delete;
+	MTStack(const MTStack &)          = delete;
+	void operator = (const MTStack &) = delete;
+	void operator = (MTStack &&)      = delete;
 	
 	void get(Telem *data_in){
 		std::unique_lock<std::mutex> ul{m};
@@ -35,6 +51,11 @@ public:
 		}
 	}
 	
+	/*
+	 two put function will be instantiated 
+	 put<true>: it is already locked, adopt the lock
+	 put<> defaults to false: it has not been locked yet
+	 */
 	template <bool Tlocked = false>
 	void put(Telem *data){
 		typedef std::unique_lock<std::mutex> uniq_lck;
