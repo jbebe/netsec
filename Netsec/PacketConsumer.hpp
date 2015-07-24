@@ -128,8 +128,9 @@ public:
 			
 			get(&raw_data);
 			parse(&raw_data, &parsed_data);
-			stats->put(&(parsed_data.ip_layer.src_addr), &parsed_data);
-			stats->evaluate();
+			if (parsed_data.valid == true){
+				stats->put(&(parsed_data.ip_layer.src_addr), &parsed_data);
+			}
 		}
 	}
 	

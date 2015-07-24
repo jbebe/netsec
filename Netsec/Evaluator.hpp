@@ -1,9 +1,11 @@
 #pragma once
 
+#include <vector>
 #include <mutex>
 
 #include <netinet/in.h>
 
+#include "../debug.hpp"
 #include "ParsedPacketElem.hpp"
 #include "IPv46.hpp"
 #include "../Globals.hpp"
@@ -15,6 +17,14 @@ private:
 
 public:
 
+	void evaluate(std::vector<ParsedPacketElem> &data){
+		/*
+		 So here come the evaluator plugins
+		*/
+		dbg_printf("TTL: %d\n", data[0].ip_layer.ttl);
+		data.clear();
+	}
+	
 	void put(const IPv46 *ip, const ParsedPacketElem *elem) {
 		std::lock_guard<std::mutex> lg{m};
 		auto stat = stats.find(*ip);
@@ -22,26 +32,11 @@ public:
 			if (stat->second.size() < STATS_ENTRY_SIZE) {
 				stat->second.push_back(*elem);
 			}
+			else {
+				evaluate(stat->second);
+			}
 		} else {
 			stats.emplace(*ip, std::vector<ParsedPacketElem>{});
-		}
-	}
-
-	void evaluate() {
-		std::lock_guard<std::mutex> lg{m};
-		for (auto &stats_it : stats) {
-			if (stats_it.second.size() == STATS_ENTRY_SIZE) {
-				/* 
-				basic evaluator plugin:
-				if ttl is not an OS specific constant, then we're suspicious
-				*/
-				for (auto &vec_it: stats_it.second){
-					if (vec_it.ip_layer.ttl == 63){
-						// TODO: scope too deep
-						dbg_printf("ttl: 63!\n");
-					}
-				}
-			}
 		}
 	}
 

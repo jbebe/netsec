@@ -34,7 +34,7 @@ public:
 		init_signals();
 
 		// num. of consumers equals cores minus producer thread
-		int consumers_num = std::max<int>(CORE_NUM.load() - 1, 1);
+		int consumers_num = std::max<int>(CORE_NUM - 1, 1);
 		consumers.reserve(consumers_num);
 		for (int i = 0; i < consumers_num; i++) {
 			// ctor with every layer of plugins
