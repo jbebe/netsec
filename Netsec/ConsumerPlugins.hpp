@@ -20,7 +20,7 @@ void plugin_IPv4(iphdr *data, ParsedPacketElem *elem){
 }
 
 void plugin_IPv6(ip6_hdr *data, ParsedPacketElem *elem){
-
+	
 }
 
 void plugin_TCP(tcphdr *data, ParsedPacketElem *elem){

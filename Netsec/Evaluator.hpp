@@ -14,15 +14,16 @@ class Evaluator {
 private:
 	std::unordered_map<IPv46, std::vector<ParsedPacketElem>, IPv46::Hash> stats;
 	std::mutex m;
+	std::function<void(std::vector<ParsedPacketElem>&)> plugins;
 
 public:
 
-	void evaluate(std::vector<ParsedPacketElem> &data){
+	static void evaluate(std::vector<ParsedPacketElem> &ip_data){
 		/*
 		 So here come the evaluator plugins
 		*/
-		dbg_printf("TTL: %d\n", data[0].ip_layer.ttl);
-		data.clear();
+		
+		dbg_printf("data size: %d\n", ip_data.size());
 	}
 	
 	void put(const IPv46 *ip, const ParsedPacketElem *elem) {
@@ -34,6 +35,7 @@ public:
 			}
 			else {
 				evaluate(stat->second);
+				stat->second.clear();
 			}
 		} else {
 			stats.emplace(*ip, std::vector<ParsedPacketElem>{});

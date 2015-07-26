@@ -21,5 +21,5 @@ struct ParsedPacketElem {
 	} app_layer;
 
 	bool valid = false;
-	
+
 };
