@@ -3,6 +3,7 @@
 #include <vector>
 #include <mutex>
 #include <initializer_list>
+#include <sstream>
 
 #include <netinet/in.h>
 
@@ -40,12 +41,6 @@ public:
 		}
 		
 		/* TODO: MODULES */
-		for (auto &plugin : plugins){
-			std::tm *ptm = std::localtime(&plugin.first.timestamp);
-			char buffer[32];
-			std::strftime(buffer, 32, "%d.%m.%Y %H:%M:%S", ptm); // Format: Mo, 15.06.2009 20:20:00
-			dbg_printf("time: %s | type: %s | prob: %f | info: %s\n", buffer, plugin.first.type.c_str(), plugin.first.probability, plugin.first.info.c_str());
-		}
 	}
 	
 	void put(const IPv46 *ip, const ParsedPacketElem *elem) {
@@ -54,6 +49,23 @@ public:
 		if (stat != stats.end()) {
 			if (stat->second.size() < STATS_ENTRY_SIZE) {
 				stat->second.push_back(*elem);
+				
+				/* - - - DEBUG - - - */
+				{
+					std::stringstream ss;
+					ss << " hasmap load:\n";
+					for (auto &dbg_stat : stats){
+						char buff[256];
+						snprintf(buff, 255, "%15s - %3zu/%3zu\n", 
+							dbg_stat.first.str().c_str(),
+							dbg_stat.second.size(),
+							STATS_ENTRY_SIZE
+						);
+						ss << buff;
+					}
+					dbg_printf("\033[H\033[J%s", ss.str().c_str());
+				}
+				/* - - - DEBUG - - - */
 			}
 			else {
 				evaluate(stat->second);

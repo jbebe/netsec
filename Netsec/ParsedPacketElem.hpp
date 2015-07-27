@@ -5,7 +5,7 @@
 #include "IPv46.hpp"
 
 struct ParsedPacketElem {
-	
+
 	struct {
 		IPv46 src_addr;
 		IPv46 dest_addr;
@@ -13,13 +13,11 @@ struct ParsedPacketElem {
 	} ip_layer;
 
 	struct {
-		
+		uint16_t src_sport;
+		uint16_t dest_port;
 	} tcp_layer;
 
 	struct {
-
 	} app_layer;
-
-	bool valid = false;
-
+	
 };

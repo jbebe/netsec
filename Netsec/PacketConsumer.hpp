@@ -33,7 +33,7 @@ class PacketConsumer {
 	
 	// plugins
 	template <typename Theader>
-	using parser_fn = std::function<void(Theader*, ParsedPacketElem*)>;
+	using parser_fn = std::function<bool(Theader*, ParsedPacketElem*)>;
 	parser_fn<iphdr> plugin_ipv4;
 	parser_fn<ip6_hdr> plugin_ipv6;
 	parser_fn<tcphdr> plugin_tcp;
@@ -78,47 +78,52 @@ public:
 		queue.get(data_in);
 	}
 	
-	void parse(RawPacketElem *raw_data, ParsedPacketElem *parsed_data){
+	bool parse(RawPacketElem *raw_data, ParsedPacketElem *parsed_data){
 		uint8_t *tcp_layer;
 		iphdr *ip_layer = (iphdr*)(raw_data->getData());
 		uint8_t protocol;
+		bool ret_val;
 		
 		switch (ip_layer->version){
 			case IPV4_VER:
 				tcp_layer = (uint8_t*)ip_layer + (ip_layer->ihl * 4);
 				protocol = ip_layer->protocol;
-				plugin_ipv4(ip_layer, parsed_data);
+				ret_val = plugin_ipv4(ip_layer, parsed_data);
 				break;
 			case IPV6_VER:
 				tcp_layer = (uint8_t*)ip_layer + sizeof(ip6_hdr);
 				protocol = ((ip6_hdr*)ip_layer)->ip6_ctlun.ip6_un1.ip6_un1_nxt;
-				plugin_ipv6((ip6_hdr*)ip_layer, parsed_data);
+				ret_val = plugin_ipv6((ip6_hdr*)ip_layer, parsed_data);
 				break;
 			default:
 				tcp_layer = nullptr;
 				protocol = 0;
+				ret_val = false;
 				break;
 		}
-		if (protocol == 0 || tcp_layer == nullptr) return;
+		if (ret_val == false || protocol == 0 || tcp_layer == nullptr) return false;
 		
 		uint8_t *app_layer;
 		
 		switch (protocol){
 			case IPPROTO_TCP:
 				app_layer = (uint8_t*)tcp_layer + (((tcphdr*)tcp_layer)->doff * 4);
-				plugin_tcp((tcphdr*)tcp_layer, parsed_data);
+				ret_val = plugin_tcp((tcphdr*)tcp_layer, parsed_data);
 				break;
 			case IPPROTO_UDP:
 				app_layer = (uint8_t*)tcp_layer + sizeof(udphdr);
-				plugin_udp((udphdr*)tcp_layer, parsed_data);
+				ret_val = plugin_udp((udphdr*)tcp_layer, parsed_data);
 				break;
 			default: 
 				app_layer = nullptr;
+				ret_val = false;
 				break;
 		}
-		if (app_layer == nullptr) return;
+		if (ret_val == false || app_layer == nullptr) return false;
 		
-		plugin_app(app_layer, parsed_data);
+		ret_val = plugin_app(app_layer, parsed_data);
+		
+		return ret_val;
 	}	
 	
 	void run(){
@@ -127,8 +132,7 @@ public:
 			ParsedPacketElem parsed_data;
 			
 			get(&raw_data);
-			parse(&raw_data, &parsed_data);
-			if (parsed_data.valid == true){
+			if (parse(&raw_data, &parsed_data)){
 				stats->put(&(parsed_data.ip_layer.src_addr), &parsed_data);
 			}
 		}

@@ -8,29 +8,37 @@
 
 #include "../ParsedPacketElem.hpp"
 
-void plugin_IPv4(iphdr *data, ParsedPacketElem *elem){
-	/*
-	uint32_t ip_addr = ntohl(data->saddr);
-	struct _ipa { uint8_t d, c, b, a; };
-	_ipa *padded_ip = (_ipa*)(&ip_addr);
-	dbg_printf("%d.%d.%d.%d\n", padded_ip->a, padded_ip->b, padded_ip->c, padded_ip->d);
-	*/
-	elem->valid = true;
+static constexpr bool OK = true;
+static constexpr bool ABORT = false;
+
+bool plugin_IPv4(iphdr *data, ParsedPacketElem *elem){
 	elem->ip_layer.ttl = data->ttl;
-}
-
-void plugin_IPv6(ip6_hdr *data, ParsedPacketElem *elem){
+	elem->ip_layer.src_addr = IPv46::fromIPv4(data->saddr);
 	
+	return OK;
 }
 
-void plugin_TCP(tcphdr *data, ParsedPacketElem *elem){
+bool plugin_IPv6(ip6_hdr *data, ParsedPacketElem *elem){
+	elem->ip_layer.ttl = data->ip6_ctlun.ip6_un1.ip6_un1_hlim;
+	elem->ip_layer.src_addr = IPv46{data->ip6_src.__in6_u.__u6_addr32};
 	
+	return OK;
 }
 
-void plugin_UDP(udphdr *data, ParsedPacketElem *elem){
-
-}
-
-void plugin_APP(uint8_t *data, ParsedPacketElem *elem){
+bool plugin_TCP(tcphdr *data, ParsedPacketElem *elem){
+	elem->tcp_layer.dest_port = data->dest;
+	elem->tcp_layer.src_sport = data->source;
 	
+	return OK;
+}
+
+bool plugin_UDP(udphdr *data, ParsedPacketElem *elem){
+	elem->tcp_layer.dest_port = data->dest;
+	elem->tcp_layer.src_sport = data->source;
+	
+	return OK;
+}
+
+bool plugin_APP(uint8_t *data, ParsedPacketElem *elem){
+	return OK;
 }

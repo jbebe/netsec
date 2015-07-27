@@ -12,6 +12,7 @@ class NatDetect {
 public:
 
 	void operator () (std::vector<ParsedPacketElem>& packets, EvaluatorInfo& info){
+		/*>>>*/return;
 		info.timestamp = std::time(0);
 		info.type = "NAT";
 		for (auto &packet : packets){
