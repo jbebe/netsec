@@ -15,8 +15,11 @@
 #include "ConsumerPlugins.hpp"
 #include "ParsedPacketElem.hpp"
 #include "Evaluator.hpp"
+#include "EvaluatorPlugins.hpp"
 
-class Netsec { 	using PacketConsumerClass = PacketConsumer<8 /* buffer size */>;
+class Netsec { 
+	
+	using PacketConsumerClass = PacketConsumer<8 /* buffer size */>;
 	using PacketProducerClass = PacketProducer<PacketConsumerClass>;
 
 	// raw packet level
@@ -24,11 +27,17 @@ class Netsec { 	using PacketConsumerClass = PacketConsumer<8 /* buffer size */>;
 	std::vector<PacketConsumerClass> consumers;
 	std::vector<std::thread> threads;
 
+	using plugin_func = Evaluator::plugin_function;
 	// main (stats) buffer
 	Evaluator stats_data;
 
 public:
-	Netsec(const char *interface) : producer{interface}
+	Netsec(const char *interface) 
+	: 
+		// initialize producer with interface name
+		producer{interface}, 
+		// initialize Evaluator with plugins
+		stats_data{{std::make_pair(EvaluatorInfo{}, plugin_func{NatDetect{}})}}
 	{
 		// init signals
 		init_signals();
@@ -38,7 +47,8 @@ public:
 		consumers.reserve(consumers_num);
 		for (int i = 0; i < consumers_num; i++) {
 			// ctor with every layer of plugins
-			consumers.emplace_back(&stats_data, plugin_IPv4, plugin_IPv6, plugin_TCP, plugin_UDP, plugin_APP);
+			consumers.emplace_back(&stats_data, 
+				plugin_IPv4, plugin_IPv6, plugin_TCP, plugin_UDP, plugin_APP);
 		}
 
 		// number of producers equals number of interfaces
