@@ -12,10 +12,10 @@
 #include "PacketProducer.hpp"
 #include "RawPacketElem.hpp"
 #include "PacketConsumer.hpp"
-#include "ConsumerPlugins.hpp"
 #include "ParsedPacketElem.hpp"
 #include "Evaluator.hpp"
-#include "EvaluatorPlugins.hpp"
+#include "ConPlugin/LayerExtractor.hpp"
+#include "EvalPlugin/NatDetect.hpp"
 
 class Netsec { 
 	

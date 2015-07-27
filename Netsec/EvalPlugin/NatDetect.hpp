@@ -3,13 +3,14 @@
 #include <cstdint>
 #include <sstream>
 
-#include "../debug.hpp"
-#include "EvaluatorInfo.hpp"
-#include "ParsedPacketElem.hpp"
+#include "../../debug.hpp"
+#include "../EvaluatorInfo.hpp"
+#include "../ParsedPacketElem.hpp"
 
 class NatDetect {
 
 public:
+
 	void operator () (std::vector<ParsedPacketElem>& packets, EvaluatorInfo& info){
 		info.timestamp = std::time(0);
 		info.type = "NAT";
