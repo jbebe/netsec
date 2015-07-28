@@ -17,7 +17,7 @@
 template <typename Telem, int Tcapacity>
 class Consumer {
 
-	MTStack<Telem, Tcapacity> mtstack;
+	const MTStack<Telem, Tcapacity> mtstack;
 	
 public:
 	/*
@@ -36,7 +36,7 @@ public:
 	 put places data on the mtstack and stays in the mutex lock
 	 until get unlocks the mutex
 	 */
-	void put(Telem data){
+	void put(const Telem * const data){
 		mtstack.put(data);
 	}
 	
@@ -44,7 +44,7 @@ public:
 	 try_put returns false if placement was unsuccessful and true otherwise
 	 it does not wait in mutex lock thus make the program faster
 	 */
-	bool try_put(Telem *data){
+	bool try_put(const Telem * const data){
 		return mtstack.try_put(data);
 	}
 	
@@ -53,7 +53,7 @@ public:
 	 which is loaded with an element from mtstack
 	 it waits in a mutex lock until put unlocks the mutex
 	 */
-	void get(Telem *data_in){
+	void get(Telem * const data_in) const {
 		mtstack.get(data_in);
 	}
 	
@@ -65,7 +65,6 @@ public:
 		while (1){
 			Telem data;
 			get(&data);
-			
 			/*
 			 basic log function that relies on that Telem 
 			 has an 'operator std::string' function

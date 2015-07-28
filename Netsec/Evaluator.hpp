@@ -13,17 +13,19 @@
 #include "../Globals.hpp"
 #include "EvaluatorInfo.hpp"
 
+/*
+ Evaluator class
+ */
 class Evaluator {
 
 public:
-	using plugin_function = std::function<void(std::vector<ParsedPacketElem>&, EvaluatorInfo&)>;
+	using plugin_function = std::function<void(const std::vector<ParsedPacketElem>&, EvaluatorInfo&)>;
 	using plugin_pair = std::pair<EvaluatorInfo, plugin_function>;
 	
 private:
 	std::unordered_map<IPv46, std::vector<ParsedPacketElem>, IPv46::Hash> stats;
-	std::mutex m;
-
 	std::vector<plugin_pair> plugins;
+	std::mutex m;
 
 public:
 	
@@ -35,15 +37,14 @@ public:
 		}
 	}
 
-	void evaluate(std::vector<ParsedPacketElem> &ip_data){
+	void evaluate(const std::vector<ParsedPacketElem> &ip_data){
 		for (auto &plugin : plugins){
 			plugin.second(ip_data, plugin.first);
 		}
-		
 		/* TODO: MODULES */
 	}
 	
-	void put(const IPv46 *ip, const ParsedPacketElem *elem) {
+	void put(const IPv46 * const ip, const ParsedPacketElem *elem) {
 		std::lock_guard<std::mutex> lg{m};
 		auto stat = stats.find(*ip);
 		if (stat != stats.end()) {

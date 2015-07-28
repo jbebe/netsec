@@ -1,6 +1,6 @@
 #pragma once
 
-#include <atomic>
+#include <thread>
 
 size_t STATS_ENTRY_SIZE = 100;
 

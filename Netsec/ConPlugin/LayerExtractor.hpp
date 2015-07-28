@@ -8,6 +8,11 @@
 
 #include "../ParsedPacketElem.hpp"
 
+/*
+ OK (true): parsing continues
+ ABORT (false): the current packet will be discarded
+ this means you can discard (it will not be evaluated) a packet on any network layer
+ */
 static constexpr bool OK = true;
 static constexpr bool ABORT = false;
 

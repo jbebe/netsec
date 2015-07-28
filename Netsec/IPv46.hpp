@@ -46,6 +46,53 @@ private:
 		return ss.str();
 	}
 	
+	/*
+	 Is there any java library to handle this? Could anyone please help me?
+	 http://stackoverflow.com/questions/7043983/ipv6-address-into-compressed-form-in-java
+	*/
+	std::string toCompressedIPv6() const {
+		uint8_t counter = 0;
+		uint8_t max_value = 0;
+		uint8_t max_place;
+		std::stringstream out;
+		constexpr int ipv6_length = sizeof(fmt_16)/sizeof(char);
+
+		// get position of 2 or more zeros
+		for (int i = 0; i < ipv6_length; i++) {
+			if (fmt_16[i] == 0) {
+				counter++;
+				if (counter > 1 && counter > max_value) {
+					max_value = counter;
+					max_place = i - counter + 1;
+				}
+			} else counter = 0;
+		}
+
+		// print full form if there is no pack of 2 or more zeros
+		if (max_value == 0) {
+			for (int i = 0; i < ipv6_length; i++) {
+				out << std::hex << fmt_16[i];
+				if (i != ipv6_length - 1) out.put(':');
+			}
+		}
+		// print compressed form otherwise
+		else {
+			for (int i = 0; i < ipv6_length; i++) {
+				if (i < max_place || i >= max_place + max_value) {
+					out << std::hex << fmt_16[i];
+					if (i != ipv6_length - 1) out.put(':');
+				}
+				else {
+					if (i == max_place) {
+						if (max_place == 0) out << "::";
+						else out.put(':');
+					}
+				}
+			}
+		}
+		return out.str();
+	}
+	
 public:
 	IPv46(const uint32_t *ptr = nullptr){
 		if (ptr != nullptr){
@@ -68,11 +115,11 @@ public:
 	}
 	
 	std::string str() const {
-		if (ipv4_mapped.zero == 0 && ipv4_mapped.leading == 0xffff){
+		if (ipv4_mapped.zero == uint64_t{0} && ipv4_mapped.leading == 0xffff){
 			return toIPv4();
 		}
 		else {
-			return toIPv6();
+			return toCompressedIPv6();
 		}
 	}
 	

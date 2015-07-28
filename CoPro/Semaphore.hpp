@@ -3,6 +3,9 @@
 #include <mutex>
 #include <condition_variable>
 
+/*
+ basic semaphore implementation
+ */
 class Semaphore {
 	
 	std::mutex m;
@@ -15,11 +18,13 @@ public:
 		ready = true;
 		cv.notify_all();
 	}
+	
 	void reset(){
 		std::lock_guard<std::mutex> lg(m);
 		ready = false;
 	}
-	void wait() {
+	
+	void wait(){
 		std::unique_lock<std::mutex> ul(m);
 		while (!ready){
 			cv.wait(ul);

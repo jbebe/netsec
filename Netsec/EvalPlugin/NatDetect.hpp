@@ -7,12 +7,15 @@
 #include "../EvaluatorInfo.hpp"
 #include "../ParsedPacketElem.hpp"
 
+/*
+ A basic detection
+ */
 class NatDetect {
 
 public:
 
-	void operator () (std::vector<ParsedPacketElem>& packets, EvaluatorInfo& info){
-		/*>>>*/return;
+	void operator () (const std::vector<ParsedPacketElem> &packets, EvaluatorInfo &info){
+		/*
 		info.timestamp = std::time(0);
 		info.type = "NAT";
 		for (auto &packet : packets){
@@ -25,6 +28,7 @@ public:
 				return;
 			}
 		}
+		*/
 	}
 
 };
