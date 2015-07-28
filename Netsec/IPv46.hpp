@@ -49,6 +49,7 @@ private:
 	/*
 	 Is there any java library to handle this? Could anyone please help me?
 	 http://stackoverflow.com/questions/7043983/ipv6-address-into-compressed-form-in-java
+	 TODO: time this implementation and that regex: http://stackoverflow.com/a/7044170/1549007
 	*/
 	std::string toCompressedIPv6() const {
 		uint8_t counter = 0;
