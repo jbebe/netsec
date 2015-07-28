@@ -40,7 +40,7 @@ private:
 	std::string toIPv6() const {
 		std::stringstream ss;
 		for (int i = 0; i < 7; i++){
-			ss << fmt_16[i] << ":";
+			ss << std::hex << fmt_16[i] << ":";
 		}
 		ss << fmt_16[7];
 		return ss.str();
