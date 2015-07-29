@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <mutex>
 #include <condition_variable>
 #include <chrono>
@@ -10,11 +11,11 @@
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
 
-#include "../debug.hpp"
-#include "../Globals.hpp"
-#include "../CoPro/MTStack.hpp"
-#include "RawPacketElem.hpp"
-#include "ParsedPacketElem.hpp"
+#include "../../debug.hpp"
+#include "../../Globals.hpp"
+#include "../../CoPro/MTStack.hpp"
+#include "../RawPacketElem.hpp"
+#include "../ParsedPacketElem.hpp"
 #include "Evaluator.hpp"
 
 #define IPV4_VER 4
@@ -22,7 +23,7 @@
 
 template <int Tcapacity>
 class PacketConsumer {
-
+	
 	// consumer properties
 	MTStack<RawPacketElem, Tcapacity> queue;
 	std::mutex cond_mut;
@@ -31,37 +32,40 @@ class PacketConsumer {
 	// stats buffer ptr
 	Evaluator *stats;
 	
+public:
+	struct PluginPack {
+		template <typename Theader>
+		using parser_fn = std::function<bool(Theader*, ParsedPacketElem*)>;
+		parser_fn<iphdr> ipv4;
+		parser_fn<ip6_hdr> ipv6;
+		parser_fn<tcphdr> tcp;
+		parser_fn<udphdr> udp;
+		parser_fn<uint8_t> app;
+		
+		PluginPack(
+			parser_fn<iphdr> ipv4 = parser_fn<iphdr>{},
+			parser_fn<ip6_hdr> ipv6 = parser_fn<ip6_hdr>{},
+			parser_fn<tcphdr> tcp = parser_fn<tcphdr>{},
+			parser_fn<udphdr> udp = parser_fn<udphdr>{},
+			parser_fn<uint8_t> app = parser_fn<uint8_t>{}
+		)
+		: ipv4{ipv4}, ipv6{ipv6}, tcp{tcp}, udp{udp}, app{app} {}
+	};
+
+private:
 	// plugins
-	template <typename Theader>
-	using parser_fn = std::function<bool(Theader*, ParsedPacketElem*)>;
-	parser_fn<iphdr> plugin_ipv4;
-	parser_fn<ip6_hdr> plugin_ipv6;
-	parser_fn<tcphdr> plugin_tcp;
-	parser_fn<udphdr> plugin_udp;
-	parser_fn<uint8_t> plugin_app;
+	PluginPack plugins;
 	
 public:
 	PacketConsumer(
-		Evaluator *stats_ptr,
-		parser_fn<iphdr> p_ipv4 = parser_fn<iphdr>{},
-		parser_fn<ip6_hdr> p_ipv6 = parser_fn<ip6_hdr>{},
-		parser_fn<tcphdr> p_tcp = parser_fn<tcphdr>{}, 
-		parser_fn<udphdr> p_udp = parser_fn<udphdr>{},
-		parser_fn<uint8_t> p_app = parser_fn<uint8_t>{}
+		Evaluator *stats_ptr = nullptr,
+		PluginPack plugins = PluginPack{}
 	)
-	: stats{stats_ptr},
-		plugin_ipv4{p_ipv4}, plugin_ipv6{p_ipv6}, plugin_tcp{p_tcp}, 
-		plugin_udp{p_udp}, plugin_app{p_app}
+	: stats{stats_ptr}, plugins{plugins}
 	{}
 	
 	PacketConsumer(PacketConsumer &&moved_consumer)
-	: PacketConsumer(moved_consumer.stats,
-		moved_consumer.plugin_ipv4,
-		moved_consumer.plugin_ipv6,
-		moved_consumer.plugin_tcp,
-		moved_consumer.plugin_udp,
-		moved_consumer.plugin_app
-		)
+	: PacketConsumer(moved_consumer.stats, moved_consumer.plugins)
 	{}
 	
 	PacketConsumer(const PacketConsumer &) = delete;
@@ -88,12 +92,12 @@ public:
 			case IPV4_VER:
 				tcp_layer = (uint8_t*)ip_layer + (ip_layer->ihl * 4);
 				protocol = ip_layer->protocol;
-				ret_val = plugin_ipv4(ip_layer, parsed_data);
+				ret_val = plugins.ipv4(ip_layer, parsed_data);
 				break;
 			case IPV6_VER:
 				tcp_layer = (uint8_t*)ip_layer + sizeof(ip6_hdr);
 				protocol = ((ip6_hdr*)ip_layer)->ip6_ctlun.ip6_un1.ip6_un1_nxt;
-				ret_val = plugin_ipv6((ip6_hdr*)ip_layer, parsed_data);
+				ret_val = plugins.ipv6((ip6_hdr*)ip_layer, parsed_data);
 				break;
 			default:
 				tcp_layer = nullptr;
@@ -108,11 +112,11 @@ public:
 		switch (protocol){
 			case IPPROTO_TCP:
 				app_layer = (uint8_t*)tcp_layer + (((tcphdr*)tcp_layer)->doff * 4);
-				ret_val = plugin_tcp((tcphdr*)tcp_layer, parsed_data);
+				ret_val = plugins.tcp((tcphdr*)tcp_layer, parsed_data);
 				break;
 			case IPPROTO_UDP:
 				app_layer = (uint8_t*)tcp_layer + sizeof(udphdr);
-				ret_val = plugin_udp((udphdr*)tcp_layer, parsed_data);
+				ret_val = plugins.udp((udphdr*)tcp_layer, parsed_data);
 				break;
 			default: 
 				app_layer = nullptr;
@@ -121,7 +125,7 @@ public:
 		}
 		if (ret_val == false || app_layer == nullptr) return false;
 		
-		ret_val = plugin_app(app_layer, parsed_data);
+		ret_val = plugins.app(app_layer, parsed_data);
 		
 		return ret_val;
 	}	

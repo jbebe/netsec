@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <pcap.h>
 
-#include "RawPacketElem.hpp"
+#include "../RawPacketElem.hpp"
 
 template <class Tconsumer>
 class PacketProducer {

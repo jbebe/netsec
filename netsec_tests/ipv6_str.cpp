@@ -35,7 +35,8 @@ uint16_t fmt_16_arr[][8] = {
     {0, 0, 0, 0, 0, 0, 0, 0}  // all zero
 };
 
-inline void int_to_hex(char **str, uint16_t num){
+
+inline void short_to_hex_str(char **str, uint16_t num){
     uint8_t nibble_1 = (num >> 12);
     uint8_t nibble_2 = ((num & 0x0f00) >> 8);
     uint8_t nibble_3 = ((num & 0x00f0) >> 4);
@@ -79,16 +80,16 @@ std::string toCompressedIPv6_no_sstream_no_sprintf(const uint16_t fmt_16[8]){
     // print full form if there is no pack of 2 or more zeros
     if (max_value == 0) {
         for (int i = 0; i < ipv6_length - 1; i++){
-            int_to_hex(&out_ptr, fmt_16[i]);
+            short_to_hex_str(&out_ptr, fmt_16[i]);
             *out_ptr++ = ':';
         }
-        int_to_hex(&out_ptr, fmt_16[ipv6_length-1]);
+        short_to_hex_str(&out_ptr, fmt_16[ipv6_length-1]);
     }        
     // print compressed form otherwise
     else {
         for (int i = 0; i < ipv6_length;) {
             if (i != max_place) {
-                int_to_hex(&out_ptr, fmt_16[i]);
+                short_to_hex_str(&out_ptr, fmt_16[i]);
                 if (i != ipv6_length - 1) *out_ptr++ = ':';
                 i++;
             } else {
@@ -225,7 +226,7 @@ void validate(std::string (*fn)(const uint16_t[8])){
 void performance(std::string (*fn)(const uint16_t[8])){
     auto start = std::chrono::system_clock::now();
     
-    for (int c = 0; c < 100000; c++){
+    for (int c = 0; c < 10000; c++){
         for (int i = 0; i < sizeof(fmt_16_arr)/sizeof(fmt_16_arr[0]); i++){
             std::string temp;
             temp = fn(fmt_16_arr[i]);
@@ -237,6 +238,9 @@ void performance(std::string (*fn)(const uint16_t[8])){
 }
 
 int main(){
+    std::cout << "\nmy implementation + no sstream + no sprintf with lambda:\n";
+    validate(toCompressedIPv6_no_sstream_no_sprintf_with_lambda);
+    performance(toCompressedIPv6_no_sstream_no_sprintf_with_lambda);
     std::cout << "\nmy implementation + no sstream + no sprintf:\n";
     validate(toCompressedIPv6_no_sstream_no_sprintf);
     performance(toCompressedIPv6_no_sstream_no_sprintf);
@@ -249,6 +253,5 @@ int main(){
     std::cout << "\nregex implementation:\n";
     validate(toCompressedIPv6Regex);
     performance(toCompressedIPv6Regex);
-    
     return 0;
 }
