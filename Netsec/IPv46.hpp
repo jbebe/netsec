@@ -56,38 +56,39 @@ private:
 		uint8_t max_value = 0;
 		uint8_t max_place;
 		std::stringstream out;
-		constexpr int ipv6_length = sizeof(fmt_16)/sizeof(char);
+		int ipv6_length = sizeof(fmt_16)/sizeof(char);
 
 		// get position of 2 or more zeros
-		for (int i = 0; i < ipv6_length; i++) {
-			if (fmt_16[i] == 0) {
+		for (int i = ipv6_length-1; i >= 0; i--){
+			if (fmt_16[i] == 0){
 				counter++;
-				if (counter > 1 && counter > max_value) {
+				if (counter > 1 && counter > max_value){
 					max_value = counter;
-					max_place = i - counter + 1;
+					max_place = i;
 				}
-			} else counter = 0;
+			} 
+			else counter = 0;
 		}
-
 		// print full form if there is no pack of 2 or more zeros
-		if (max_value == 0) {
-			for (int i = 0; i < ipv6_length; i++) {
+		if (max_value == 0){
+			for (int i = 0; i < ipv6_length-1; i++){
 				out << std::hex << fmt_16[i];
-				if (i != ipv6_length - 1) out.put(':');
+				out.put(':');
 			}
+			out << std::hex << fmt_16[ipv6_length-1];
 		}
 		// print compressed form otherwise
 		else {
-			for (int i = 0; i < ipv6_length; i++) {
-				if (i < max_place || i >= max_place + max_value) {
+			for (int i = 0; i < ipv6_length;){
+				if (i != max_place){
 					out << std::hex << fmt_16[i];
 					if (i != ipv6_length - 1) out.put(':');
+					i++;
 				}
 				else {
-					if (i == max_place) {
-						if (max_place == 0) out << "::";
-						else out.put(':');
-					}
+					if (max_place == 0) out << "::";
+					else out.put(':');
+					i += max_value;
 				}
 			}
 		}
