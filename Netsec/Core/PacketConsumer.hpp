@@ -21,11 +21,10 @@
 #define IPV4_VER 4
 #define IPV6_VER 6
 
-template <int Tcapacity>
 class PacketConsumer {
 	
 	// consumer properties
-	MTStack<RawPacketElem, Tcapacity> queue;
+	MTStack<RawPacketElem, CONSUMER_BUFFER_SIZE> queue;
 	std::mutex cond_mut;
 	std::condition_variable cond;
 	
@@ -84,7 +83,7 @@ public:
 	
 	bool parse(RawPacketElem *raw_data, ParsedPacketElem *parsed_data){
 		uint8_t *tcp_layer;
-		iphdr *ip_layer = (iphdr*)(raw_data->getData());
+		iphdr *ip_layer = (iphdr*)(raw_data->data());
 		uint8_t protocol;
 		bool ret_val;
 		
@@ -131,7 +130,7 @@ public:
 	}	
 	
 	void run(){
-		while (1){
+		while (RUN_CONSUMER){
 			RawPacketElem raw_data;
 			ParsedPacketElem parsed_data;
 			

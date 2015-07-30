@@ -19,17 +19,13 @@
 #include "../EvalPlugin/NatDetect.hpp"
 #include "../EvalModule/DummyModule.hpp"
 
-class Netsec { 
+class Netsec {
 	
-	using PacketConsumerInst = PacketConsumer<CONSUMER_BUFFER_SIZE>;
-	using PacketProducerInst = PacketProducer<PacketConsumerInst>;
-
 	// raw packet level
-	PacketProducerInst producer;
-	std::vector<PacketConsumerInst> consumers;
+	PacketProducer producer;
+	std::vector<PacketConsumer> consumers;
 	std::vector<std::thread> threads;
 
-	using plugin_func = Evaluator::plugin_function;
 	// main (stats) buffer + evaluator
 	Evaluator stats_data;
 
@@ -38,19 +34,21 @@ public:
 	: 
 		// initialize producer with interface name
 		producer{interface}, 
-		// initialize Evaluator with plugins
-		stats_data{{std::make_pair(EvaluatorInfo{}, plugin_func{NatDetect{}})}, {dummy_module}}
+		// initialize Evaluator with plugins and modules
+		stats_data{
+			{Evaluator::PluginPair{DummyFunctorPlugin{}, EvaluatorInfo{}}},
+			{dummy_module}
+		}
 	{
 		// init signals
 		init_signals();
-
 		// num. of consumers equals cores minus producer thread
 		int consumers_num = std::max<int>(CORE_NUM - 1, 1);
 		consumers.reserve(consumers_num);
 		for (int i = 0; i < consumers_num; i++) {
 			// ctor with every layer of plugins
 			consumers.emplace_back(
-				&stats_data, PacketConsumerInst::PluginPack{
+				&stats_data, PacketConsumer::PluginPack{
 					plugin_IPv4, plugin_IPv6, plugin_TCP, plugin_UDP, plugin_APP
 				}
 			);
@@ -67,11 +65,11 @@ public:
 		// TODO
 
 		// start producer(s)
-		threads.emplace_back(&PacketProducerInst::run, &producer, &consumers);
+		threads.emplace_back(&PacketProducer::run, &producer, &consumers);
 
 		// start consumers
 		for (auto &consumer : consumers) {
-			threads.emplace_back(&PacketConsumerInst::run, &consumer);
+			threads.emplace_back(&PacketConsumer::run, &consumer);
 		}
 
 		// wait for end

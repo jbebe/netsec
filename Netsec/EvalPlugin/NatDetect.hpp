@@ -10,10 +10,9 @@
 /*
  A basic detection
  */
-class NatDetect {
+class DummyFunctorPlugin {
 
 public:
-
 	void operator () (const std::vector<ParsedPacketElem> &packets, EvaluatorInfo &info){
 		info.timestamp = std::time(0);
 		info.type = "NAT";

@@ -19,22 +19,28 @@
 class Evaluator {
 
 public:
-	using plugin_function = std::function<void(const std::vector<ParsedPacketElem>&, EvaluatorInfo&)>;
-	using plugin_pair = std::pair<EvaluatorInfo, plugin_function>;
-	
-	using module_function = std::function<void(const std::vector<plugin_pair>&)>;
+	using plugin_fn_t = void(const std::vector<ParsedPacketElem>&, EvaluatorInfo&);
+	struct PluginPair {
+		std::function<plugin_fn_t> function;
+		EvaluatorInfo data;
+		PluginPair(
+			std::function<plugin_fn_t> function = std::function<plugin_fn_t>{},
+			EvaluatorInfo data = EvaluatorInfo{}
+		): function{function}, data{data} {}
+	};
+	using module_t = std::function<void(const std::vector<ParsedPacketElem>&, const std::vector<PluginPair>&)>;
 	
 private:
 	std::unordered_map<IPv46, std::vector<ParsedPacketElem>, IPv46::Hash> stats;
-	std::vector<plugin_pair> plugins;
-	std::vector<module_function> modules;
+	std::vector<PluginPair> plugins;
+	std::vector<module_t> modules;
 	std::mutex m;
 
 public:
 	
 	Evaluator() = delete;
 	
-	Evaluator(std::initializer_list<plugin_pair> plugins_il, std::initializer_list<module_function> modules_il) {
+	Evaluator(std::initializer_list<PluginPair> plugins_il, std::initializer_list<module_t> modules_il) {
 		for (auto &plugin : plugins_il){
 			plugins.emplace_back(plugin);
 		}
@@ -45,11 +51,10 @@ public:
 
 	void evaluate(const std::vector<ParsedPacketElem> &ip_data){
 		for (auto &plugin : plugins){
-			plugin.second(ip_data, plugin.first);
+			plugin.function(ip_data, plugin.data);
 		}
-		/* TODO: MODULES */
 		for (auto &module : modules){
-			module(plugins);
+			module(ip_data, plugins);
 		}
 	}
 	

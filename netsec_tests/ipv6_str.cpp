@@ -226,7 +226,7 @@ void validate(std::string (*fn)(const uint16_t[8])){
 void performance(std::string (*fn)(const uint16_t[8])){
     auto start = std::chrono::system_clock::now();
     
-    for (int c = 0; c < 10000; c++){
+    for (int c = 0; c < 500000; c++){
         for (int i = 0; i < sizeof(fmt_16_arr)/sizeof(fmt_16_arr[0]); i++){
             std::string temp;
             temp = fn(fmt_16_arr[i]);
@@ -238,9 +238,6 @@ void performance(std::string (*fn)(const uint16_t[8])){
 }
 
 int main(){
-    std::cout << "\nmy implementation + no sstream + no sprintf with lambda:\n";
-    validate(toCompressedIPv6_no_sstream_no_sprintf_with_lambda);
-    performance(toCompressedIPv6_no_sstream_no_sprintf_with_lambda);
     std::cout << "\nmy implementation + no sstream + no sprintf:\n";
     validate(toCompressedIPv6_no_sstream_no_sprintf);
     performance(toCompressedIPv6_no_sstream_no_sprintf);

@@ -14,23 +14,22 @@ private:
 		struct {
 			uint64_t zero;    /* 0x0000000000000000 */
 			uint32_t leading; /* 0x0000ffff */
-			union {
-			struct {
+			uint32_t addr;    /* ipv4 address */
+		} ipv4_mapped;
+	};
+
+	std::string toIPv4(uint32_t ipv4_addr) const {
+		struct ipv4_bytes {
 			uint8_t addr1; /* 1st byte */
 			uint8_t addr2; /* 2nd byte */
 			uint8_t addr3; /* 3rd byte */
 			uint8_t addr4; /* 4th byte */
-			};
-			uint32_t addr;    /* ipv4 address */
-			};
-		} ipv4_mapped;
-	};
-
-	std::string toIPv4(const uint16_t fmt_16[8]) const {
+		};
+		ipv4_bytes *bytes = reinterpret_cast<ipv4_bytes*>(&ipv4_addr);
 		char buff[16];
 		snprintf(buff, 16, "%hhu.%hhu.%hhu.%hhu", 
-			ipv4_mapped.addr1, ipv4_mapped.addr2, 
-			ipv4_mapped.addr3, ipv4_mapped.addr4
+			bytes->addr1, bytes->addr2, 
+			bytes->addr3, bytes->addr4
 		);
 		return std::string{buff};
 	}
@@ -66,7 +65,7 @@ private:
 		(*str)++;
 	}
 
-	static std::string toCompressedIPv6(const uint16_t fmt_16[8]){
+	inline static std::string toCompressedIPv6(const uint16_t fmt_16[8]){
 		uint8_t counter = 0;
 		uint8_t max_value = 0;
 		uint8_t max_place;
@@ -134,7 +133,7 @@ public:
 	
 	std::string str() const {
 		if (ipv4_mapped.zero == uint64_t{0} && ipv4_mapped.leading == 0xffff){
-			return toIPv4(fmt_16);
+			return toIPv4(ipv4_mapped.addr);
 		}
 		else {
 			return toCompressedIPv6(fmt_16);

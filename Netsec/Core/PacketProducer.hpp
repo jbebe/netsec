@@ -3,9 +3,10 @@
 #include <cstdlib>
 #include <pcap.h>
 
+#include "../../Globals.hpp"
 #include "../RawPacketElem.hpp"
+#include "PacketConsumer.hpp"
 
-template <class Tconsumer>
 class PacketProducer {
 
 	RawPacketElem temp_packet;
@@ -37,14 +38,20 @@ public:
 		return &temp_packet;
 	}
 	
-	void run(std::vector<Tconsumer> *consumers){
+	void run(std::vector<PacketConsumer> *consumers){
 		RawPacketElem *data = get();
-		while (1){
+		int cntr = 0;
+		while (RUN_PRODUCER){
 			for (auto &consumer : *consumers){
 				if (consumer.try_put(data)){
 					data = get();
 				}
 			}
+		}
+		RUN_CONSUMER.store(false);
+		for (auto &consumer : *consumers){
+			// wake consumers
+			consumer.put(data);
 		}
 	}
 	
