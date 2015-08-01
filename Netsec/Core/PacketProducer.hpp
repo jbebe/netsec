@@ -8,12 +8,12 @@
 #include "PacketConsumer.hpp"
 
 class PacketProducer {
-
-	RawPacketElem temp_packet;
 	pcap_t* pcap_handle;
 	uint8_t hdr_len;
 	
 public:
+	PacketProducer(): pcap_handle{nullptr} {}
+	
 	PacketProducer(const char *interface){
 		char errbuf[PCAP_ERRBUF_SIZE] = "";
 		pcap_handle = pcap_open_live(interface, RawPacketElem::MTU, 1, 1000, errbuf);
@@ -23,7 +23,7 @@ public:
 		hdr_len = getFrameLength(pcap_datalink(pcap_handle));
 	}
 	
-	RawPacketElem *get(){
+	void get(RawPacketElem *temp_packet){
 		struct pcap_pkthdr hdr;
 		const uint8_t *data;
 		while ((data = pcap_next(pcap_handle, &hdr)) == NULL);
@@ -34,24 +34,23 @@ public:
 			data += hdr_len;
 			hdr.caplen -= hdr_len;
 		}
-		new (static_cast<void *>(&temp_packet)) RawPacketElem{data, hdr.caplen};
-		return &temp_packet;
+		*temp_packet = RawPacketElem{data, hdr.caplen};
 	}
 	
 	void run(std::vector<PacketConsumer> *consumers){
-		RawPacketElem *data = get();
-		int cntr = 0;
+		RawPacketElem data;
+		get(&data);
 		while (RUN_PRODUCER){
 			for (auto &consumer : *consumers){
-				if (consumer.try_put(data)){
-					data = get();
+				if (consumer.try_put(&data)){
+					get(&data);
 				}
 			}
 		}
 		RUN_CONSUMER.store(false);
 		for (auto &consumer : *consumers){
 			// wake consumers
-			consumer.put(data);
+			consumer.put(&data);
 		}
 	}
 	

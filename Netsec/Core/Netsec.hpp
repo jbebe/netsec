@@ -36,8 +36,8 @@ public:
 		producer{interface}, 
 		// initialize Evaluator with plugins and modules
 		stats_data{
-			{Evaluator::PluginPair{DummyFunctorPlugin{}, EvaluatorInfo{}}},
-			{dummy_module}
+			{ Evaluator::PluginPair{DummyFunctorPlugin{}, EvaluatorInfo{}} },
+			{ dummy_module }
 		}
 	{
 		// init signals
@@ -54,15 +54,10 @@ public:
 			);
 		}
 
-		// number of producers equals number of interfaces
-		//producer = PacketProducerClass(interface);
-
 		threads.reserve(CORE_NUM);
 	}
 
 	void start() {
-		// start flag
-		// TODO
 
 		// start producer(s)
 		threads.emplace_back(&PacketProducer::run, &producer, &consumers);

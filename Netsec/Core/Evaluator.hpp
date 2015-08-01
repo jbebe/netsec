@@ -15,11 +15,19 @@
 
 /*
  Evaluator class
+ The role of this class is to provide a central unit 
+ for parsed data, plugins and modules
  */
 class Evaluator {
 
 public:
-	using plugin_fn_t = void(const std::vector<ParsedPacketElem>&, EvaluatorInfo&);
+	// Type signature for evaluator plugin
+	using plugin_fn_t = void(
+		const std::vector<ParsedPacketElem>&, EvaluatorInfo&);
+	/*
+	 Container for parser plugins and their temporary store
+	 Same as std::pair but with variable names that speak to theirselves
+	 */
 	struct PluginPair {
 		std::function<plugin_fn_t> function;
 		EvaluatorInfo data;
@@ -28,12 +36,30 @@ public:
 			EvaluatorInfo data = EvaluatorInfo{}
 		): function{function}, data{data} {}
 	};
-	using module_t = std::function<void(const std::vector<ParsedPacketElem>&, const std::vector<PluginPair>&)>;
+	// Type signature for evaluator module
+	using module_fn_t = void(
+		const std::vector<ParsedPacketElem>&, const std::vector<PluginPair>&);
+	using module_t = std::function<module_fn_t>;
 	
 private:
+	/*
+	 hashmap to store 'ip' -> 'packet data collection' structure
+	 the collection has to be big enough to do statistical analysis
+	 */
 	std::unordered_map<IPv46, std::vector<ParsedPacketElem>, IPv46::Hash> stats;
+	/*
+	 this collection stores plugin functions plus their own informations
+	 this way we can maintain the outcoming informations in a unified struct 
+	 */ 
 	std::vector<PluginPair> plugins;
+	// modules mostly for output
 	std::vector<module_t> modules;
+	// mutex to lock the whole class while working on it
+	// TODO: THIS IS WRONG! 
+	// but we can't use multiple hashmaps because 
+	// we want one warning for a single detection
+	// so we have to optimize when to lock and unlock
+	// IDEA: multiple mutexes for different data
 	std::mutex m;
 
 public:
