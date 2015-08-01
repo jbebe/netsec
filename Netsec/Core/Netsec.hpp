@@ -32,11 +32,9 @@ class Netsec {
 public:
 	Netsec(const char *interface) 
 	: 
-		// initialize producer with interface name
-		producer{interface}, 
 		// initialize Evaluator with plugins and modules
 		stats_data{
-			{ Evaluator::PluginPair{DummyFunctorPlugin{}, EvaluatorInfo{}} },
+			{ Evaluator::PluginPair{NatDetectionPlugin{}, EvaluatorInfo{}} },
 			{ dummy_module }
 		}
 	{
@@ -54,6 +52,10 @@ public:
 			);
 		}
 
+		// initialize producer with interface name
+		//producer = PacketProducer{interface};
+		producer = PacketProducer::debugInstance(interface, "src host 192.168.0.100");
+		
 		threads.reserve(CORE_NUM);
 	}
 

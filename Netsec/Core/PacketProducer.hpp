@@ -23,6 +23,33 @@ public:
 		hdr_len = getFrameLength(pcap_datalink(pcap_handle));
 	}
 	
+	static PacketProducer debugInstance(const char *interface, const char *pcap_filter){
+		PacketProducer pp{interface};
+		struct bpf_program fp;
+		pcap_activate(pp.pcap_handle);
+		pcap_compile(pp.pcap_handle, &fp, pcap_filter, 1, PCAP_NETMASK_UNKNOWN);
+		pcap_setfilter(pp.pcap_handle, &fp);
+		return pp;
+	}
+	
+	PacketProducer(PacketProducer &&rhs)
+	: pcap_handle{rhs.pcap_handle}, hdr_len{rhs.hdr_len} 
+	{
+		rhs.pcap_handle = nullptr;
+	}
+	
+	PacketProducer(const PacketProducer &)   = delete;
+	void operator = (const PacketProducer &) = delete;
+	
+	void operator = (PacketProducer &&rhs){
+		if (pcap_handle != nullptr){
+			dbg_printf("pcap_handle was already set!\n");
+		}
+		pcap_handle = rhs.pcap_handle;
+		hdr_len = rhs.hdr_len;
+		rhs.pcap_handle = nullptr;
+	}
+	
 	void get(RawPacketElem *temp_packet){
 		struct pcap_pkthdr hdr;
 		const uint8_t *data;
@@ -75,10 +102,12 @@ public:
 	}
 	
 	~PacketProducer(){
-		struct pcap_stat stat;
-		pcap_stats(pcap_handle, &stat);
-		dbg_printf("Received: %u, dropped: %u, dropped by nic: %u\n", 
-				stat.ps_recv, stat.ps_drop, stat.ps_ifdrop);
-		pcap_close(pcap_handle);
+		if (pcap_handle != nullptr){
+			struct pcap_stat stat;
+			pcap_stats(pcap_handle, &stat);
+			dbg_printf("Received: %u, dropped: %u, dropped by nic: %u\n", 
+					stat.ps_recv, stat.ps_drop, stat.ps_ifdrop);
+			pcap_close(pcap_handle);
+		}
 	}
 };

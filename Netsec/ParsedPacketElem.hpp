@@ -10,6 +10,7 @@ struct ParsedPacketElem {
 		IPv46 src_addr;
 		IPv46 dest_addr;
 		uint8_t ttl;
+		uint16_t id;
 	} ip_layer;
 
 	struct {

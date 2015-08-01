@@ -92,7 +92,7 @@ public:
 				stat->second.push_back(*elem);
 				
 				/* - - - DEBUG - - - */
-				{
+				/*{
 					std::stringstream ss;
 					ss << "Hasmap load / Informations\n";
 					for (auto &dbg_stat : stats){
@@ -106,7 +106,7 @@ public:
 					}
 					//dbg_printf("\033[H\033[J%s", ss.str().c_str());
 					dbg_printf("\033[H%s", ss.str().c_str());
-				}
+				}*/
 				/* - - - DEBUG - - - */
 			}
 			else {

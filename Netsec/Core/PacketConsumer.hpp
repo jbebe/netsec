@@ -104,7 +104,8 @@ public:
 				ret_val = false;
 				break;
 		}
-		if (ret_val == false || protocol == 0 || tcp_layer == nullptr) return false;
+		if (ret_val == false) return false;
+		if (protocol == 0 || tcp_layer == nullptr) return true;
 		
 		uint8_t *app_layer;
 		
@@ -122,7 +123,8 @@ public:
 				ret_val = false;
 				break;
 		}
-		if (ret_val == false || app_layer == nullptr) return false;
+		if (ret_val == false) return false;
+		if (app_layer == nullptr) return true;
 		
 		ret_val = plugins.app(app_layer, parsed_data);
 		

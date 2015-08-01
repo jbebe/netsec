@@ -18,7 +18,7 @@ private:
 		} ipv4_mapped;
 	};
 
-	std::string toIPv4(uint32_t ipv4_addr) const {
+	std::string toIPv4Str(uint32_t ipv4_addr) const {
 		struct ipv4_bytes {
 			uint8_t addr1; /* 1st byte */
 			uint8_t addr2; /* 2nd byte */
@@ -34,7 +34,7 @@ private:
 		return std::string{buff};
 	}
 	
-	static std::string toIPv6(const uint16_t fmt_16[8]){
+	static std::string toIPv6Str(const uint16_t fmt_16[8]){
 		std::stringstream ss;
 		for (int i = 0; i < 7; i++){
 			ss << std::hex << fmt_16[i] << ":";
@@ -65,7 +65,7 @@ private:
 		(*str)++;
 	}
 
-	inline static std::string toCompressedIPv6(const uint16_t fmt_16[8]){
+	inline static std::string toCompressedIPv6Str(const uint16_t fmt_16[8]){
 		uint8_t counter = 0;
 		uint8_t max_value = 0;
 		uint8_t max_place;
@@ -111,15 +111,22 @@ private:
 	}
 
 public:
-	IPv46(const uint32_t *ptr = nullptr){
+	IPv46(const uint8_t *ptr = nullptr){
 		if (ptr != nullptr){
-			memcpy(fmt_32, ptr, sizeof(fmt_32));
+			if (sizeof(int*) > sizeof(int)){
+				const uint64_t *ptr64 = reinterpret_cast<const uint64_t*>(ptr);
+				fmt_64[0] = ptr64[0];
+				fmt_64[1] = ptr64[1];
+			}
+			else {
+				memcpy(fmt_8, ptr, sizeof(fmt_8));
+			}
 		}
 	}
 	
 	static IPv46 fromIPv4(uint32_t addr){
 		const uint32_t tmp[4] = {0, 0, 0xffff, addr};
-		return IPv46(tmp);
+		return IPv46(reinterpret_cast<const uint8_t*>(tmp));
 	}
 	
 	bool operator == (const IPv46 &rhs) const {
@@ -133,10 +140,10 @@ public:
 	
 	std::string str() const {
 		if (ipv4_mapped.zero == uint64_t{0} && ipv4_mapped.leading == 0xffff){
-			return toIPv4(ipv4_mapped.addr);
+			return toIPv4Str(ipv4_mapped.addr);
 		}
 		else {
-			return toCompressedIPv6(fmt_16);
+			return toCompressedIPv6Str(fmt_16);
 		}
 	}
 	

@@ -18,14 +18,17 @@ static constexpr bool ABORT = false;
 
 bool plugin_IPv4(iphdr *data, ParsedPacketElem *elem){
 	elem->ip_layer.ttl = data->ttl;
+	elem->ip_layer.id = data->id;
 	elem->ip_layer.src_addr = IPv46::fromIPv4(data->saddr);
+	elem->ip_layer.dest_addr = IPv46::fromIPv4(data->daddr);
 	
 	return OK;
 }
 
 bool plugin_IPv6(ip6_hdr *data, ParsedPacketElem *elem){
 	elem->ip_layer.ttl = data->ip6_ctlun.ip6_un1.ip6_un1_hlim;
-	elem->ip_layer.src_addr = IPv46{data->ip6_src.__in6_u.__u6_addr32};
+	elem->ip_layer.src_addr = IPv46{data->ip6_src.__in6_u.__u6_addr8};
+	elem->ip_layer.dest_addr = IPv46{data->ip6_dst.__in6_u.__u6_addr8};
 	
 	return OK;
 }
@@ -45,5 +48,6 @@ bool plugin_UDP(udphdr *data, ParsedPacketElem *elem){
 }
 
 bool plugin_APP(uint8_t *data, ParsedPacketElem *elem){
+	
 	return OK;
 }
